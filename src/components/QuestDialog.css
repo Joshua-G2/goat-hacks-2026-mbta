@@ -1,0 +1,278 @@
+.quest-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.quest-dialog {
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border-radius: 16px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s ease;
+  z-index: 1;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.quest-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 30px;
+  text-align: center;
+  border-radius: 16px 16px 0 0;
+  color: white;
+}
+
+.quest-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.quest-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.quest-content {
+  padding: 30px;
+}
+
+.npc-avatar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.npc-icon {
+  font-size: 64px;
+  background: #f0f0f0;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quest-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+.audio-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.play-audio-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.play-audio-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+.play-audio-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.play-audio-button.playing {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.quest-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quest-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.detail-icon {
+  font-size: 24px;
+}
+
+.detail-text {
+  flex: 1;
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+
+.quest-actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px 30px 30px;
+}
+
+.decline-button,
+.accept-button {
+  flex: 1;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.decline-button {
+  background: #e0e0e0;
+  color: #666;
+}
+
+.decline-button:hover {
+  background: #d0d0d0;
+}
+
+.accept-button {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.accept-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+/* Scrollbar styling */
+.quest-dialog::-webkit-scrollbar {
+  width: 8px;
+}
+
+.quest-dialog::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.quest-dialog::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.quest-dialog::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+@media (max-width: 768px) {
+  .quest-dialog {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .quest-header {
+    padding: 20px;
+  }
+
+  .quest-title {
+    font-size: 22px;
+  }
+
+  .quest-content {
+    padding: 20px;
+  }
+
+  .npc-icon {
+    width: 80px;
+    height: 80px;
+    font-size: 48px;
+  }
+
+  .quest-text {
+    font-size: 14px;
+    padding: 15px;
+  }
+
+  .quest-actions {
+    flex-direction: column;
+    padding: 15px 20px 20px;
+  }
+}

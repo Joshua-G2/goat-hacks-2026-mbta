@@ -42,6 +42,7 @@ body {
   padding: 2rem;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: relative;
 }
 
 .app-header h1 {
@@ -54,6 +55,27 @@ body {
   margin: 0.5rem 0 0 0;
   font-size: 1.1rem;
   opacity: 0.95;
+}
+
+.mode-toggle-button {
+  margin-top: 1rem;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid white;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.mode-toggle-button:hover {
+  background: white;
+  color: var(--blue-line);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .app-container {
@@ -77,6 +99,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-height: 600px;
+  flex: 1;
 }
 
 .app-footer {
@@ -96,6 +120,36 @@ body {
 
 .app-footer a:hover {
   text-decoration: underline;
+}
+
+/* Game Mode Specific Styles */
+.game-sidebar {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.quest-generator {
+  margin-top: 1rem;
+}
+
+.generate-quest-button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.generate-quest-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 /* Responsive Design */

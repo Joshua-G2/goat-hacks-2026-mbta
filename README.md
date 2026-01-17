@@ -1,95 +1,268 @@
-# MBTA Real-Time Transfer Helper
+# MBTA Transit Helper + RPG Mode 🚇🎮
 
-A React-based web application for planning MBTA transfers with real-time predictions and transfer guidance.
+A dual-mode React web application that combines real-time MBTA transit planning with an engaging RPG game experience.
+
+## 🌟 Two Modes, One App
+
+### 🗺️ Transit Mode
+Plan your MBTA journey with real-time predictions and smart transfer guidance.
+
+### 🎮 Game Mode (RPG)
+Transform your transit experience into an adventure! Earn XP, complete quests, and explore Boston's transit system like never before.
 
 ## 🎯 Features
 
-### ✅ Implemented (Template/Layout)
+### Transit Mode Features
 
-1. **Interactive Map Display**
+1. **Smart Trip Planner** ⭐ NEW
+   - Origin, transfer, and destination route selection
+   - Real-time predictions from MBTA API
+   - Walking time estimation with adjustable speed
+   - Transfer confidence calculator (Likely/Risky/Unlikely)
+   - Auto-refresh predictions every 30 seconds
+
+2. **Interactive Map Display**
    - Template for displaying MBTA routes and stops
-   - Route legend with official MBTA colors (Red, Orange, Green, Blue lines)
-   - Placeholder for interactive map (ready for Leaflet/Mapbox integration)
-   - Selection state tracking for origin, transfer, and destination
+   - Route legend with official MBTA colors
+   - Ready for Leaflet/Mapbox integration
+   - Selection state tracking
 
-2. **Station Selector**
-   - Dropdown selectors for origin, transfer (optional), and destination stations
+3. **Station Selector**
+   - Dropdown selectors for origin, transfer, destination
    - Clear visual hierarchy with emoji icons
-   - Action buttons (Clear All, Find Transfers)
-   - Helper text for user guidance
+   - Action buttons and helper text
 
-3. **Transfer Guidance**
-   - Walking speed adjustment (Slow, Normal, Fast)
-   - Transfer time estimation with step-by-step breakdown
-   - Accessibility information placeholder
+4. **Transfer Guidance**
+   - Walking speed adjustment
+   - Transfer time estimation
+   - Accessibility information
    - Peak hour warnings
 
-4. **Live Connection Finder**
-   - Display template for next available trains
+5. **Live Connection Finder**
+   - Next available trains display
    - Real-time countdown and arrival times
-   - Route summary with origin → transfer → destination flow
-   - Connection cards with status indicators (on-time/delayed)
-   - Auto-refresh functionality placeholder
+   - Connection status indicators
+   - Auto-refresh functionality
 
-5. **Confidence Indicator**
-   - Likely/Risky/Unlikely badges based on transfer feasibility
+6. **Confidence Indicator**
+   - Likely/Risky/Unlikely badges
    - Success rate percentages
-   - Detailed breakdown of timing factors
-   - Alternative suggestions for unlikely transfers
+   - Timing factor breakdowns
+   - Alternative suggestions
 
-## 🚀 Getting Started
+### Game Mode Features ⭐ NEW
+
+1. **XP & Leveling System**
+   - 12 unique titles (Newcomer → MBTA Guardian)
+   - Progress bar with next level tracking
+   - Visual level badge
+   - Multiple ways to earn XP
+
+2. **Task & Quest System**
+   - Auto-generated tasks at MBTA stations
+   - 4 task types: Explorer, Transfer Master, Route Runner, Community Helper
+   - AI-powered quest generation (integration ready)
+   - Quest dialog with NPC narratives
+   - Audio narration support (TTS ready)
+
+3. **Achievement System**
+   - 7 mileage milestones
+   - Achievement badges
+   - Free ticket reward at 100,000 miles
+   - Progress tracking
+
+4. **Social Features**
+   - Real-time event reporting (Police, Delay, Crowded, etc.)
+   - See other players on map (multiplayer ready)
+   - Community event feed
+   - Auto-expiring events
+
+5. **Stats & Profile**
+   - Total XP and miles traveled
+   - Tasks completed counter
+   - Achievement gallery
+   - Personalized transit avatar
+
+## 🚀 Quick Start
+
+See **[QUICKSTART.md](QUICKSTART.md)** for 5-minute setup guide.
 
 ### Prerequisites
 
 - Node.js 18+ and npm
+- MBTA API key (free at https://api-v3.mbta.com/register)
 
-### API Setup
+### Installation
 
-**Important**: This project requires an MBTA API key. See `API_SETUP.md` for detailed instructions.
-
-Quick setup:
 ```bash
-# Copy the environment template
+# Install dependencies
+npm install
+
+# Copy environment template
 cp .env.example .env
 
-# Edit .env and add your MBTA API key
-# See API_SETUP.md for the key details
-
-# Install dependencies
-npm install
+# Add your MBTA API key to .env
+# VITE_MBTA_API_KEY=your_key_here
 
 # Start development server
 npm run dev
 ```
 
-### Available Commands
+Open http://localhost:5173
+
+### Mode Toggle
+
+Click **"Switch to Game Mode"** in the header to activate RPG features!
+
+## 📚 Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
+- **[RPG_FEATURES.md](RPG_FEATURES.md)** - Complete RPG implementation guide
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - What was built
+- **[API_SETUP.md](API_SETUP.md)** - MBTA API configuration details
+
+## 🎮 How to Play (Game Mode)
+
+1. **Switch to Game Mode** - Click the toggle button
+2. **Complete Tasks** - Visit stations and click ✓ to earn +5 XP
+3. **Travel Miles** - Track your transit journeys for +1 XP per mile
+4. **Report Events** - Help the community by reporting delays, police, etc.
+5. **Generate Quests** - Click "Generate New Quest" for AI narratives
+6. **Level Up** - Progress through 12 unique titles
+7. **Unlock Achievements** - Reach mileage milestones
+8. **Earn Free Ticket** - Hit 100,000 miles for your reward!
+
+## 🏗️ Project Structure
+
+```
+src/
+├── components/
+│   ├── TripPlanner.jsx          # Smart trip planning ⭐ NEW
+│   ├── GameMap.jsx               # RPG map view ⭐ NEW
+│   ├── UserProfile.jsx           # Levels & achievements ⭐ NEW
+│   ├── QuestDialog.jsx           # AI quests ⭐ NEW
+│   ├── InteractiveMap.jsx        # Transit map
+│   ├── StationSelector.jsx       # Station selection
+│   ├── TransferGuidance.jsx      # Transfer help
+│   ├── LiveConnectionFinder.jsx  # Real-time trains
+│   └── ConfidenceIndicator.jsx   # Transfer confidence
+├── utils/
+│   ├── transitHelpers.js         # Transit calculations ⭐ NEW
+│   └── gameHelpers.js            # Game mechanics ⭐ NEW
+├── services/
+│   └── backendService.js         # Backend layer ⭐ NEW
+├── config/
+│   └── mbtaApi.js               # MBTA API wrapper
+├── App.jsx                       # Main app with mode toggle
+└── main.jsx                      # Entry point
+```
+
+## 🔧 Tech Stack
+
+- **React 19** - UI framework
+- **Vite** - Build tool & dev server
+- **MBTA V3 API** - Real-time transit data
+- **CSS3** - Styling with animations
+
+### Optional Integrations
+
+- **Firebase** - Real-time multiplayer backend
+- **Supabase** - PostgreSQL-based backend
+- **Leaflet/Mapbox** - Interactive maps
+- **LlamaIndex** - RAG for quest generation
+- **OpenRouter** - LLM API for narratives
+- **ElevenLabs** - Text-to-speech for quests
+
+## 🎯 XP & Rewards
+
+### How to Earn XP
+
+- ⭐ Complete task: **+5 XP**
+- 🚇 Travel 1 mile: **+1 XP**
+- 📍 Visit station: **+2 XP**
+- 🔄 Successful transfer: **+3 XP**
+- 🎯 Complete route: **+10 XP**
+- 📅 Daily login: **+5 XP**
+- 📢 Report event: **+2 XP**
+
+### Achievements
+
+| Miles | Reward | Badge |
+|-------|--------|-------|
+| 100 | First 100 Miles | 🎯 |
+| 500 | Transit Regular | 🚇 |
+| 1,000 | Thousand Mile Club | ⭐ |
+| 5,000 | Master Navigator | 🏆 |
+| 10,000 | Transit Legend | 👑 |
+| 50,000 | Epic Commuter | 💎 |
+| 100,000 | **FREE TICKET!** | 🎁 |
+
+## 🔌 Backend Setup (Optional)
+
+The app works immediately with a mock backend. For multiplayer and persistence:
+
+### Firebase
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Lint code
-npm run lint
+npm install firebase
 ```
 
-## 📋 Next Steps for Implementation
+1. Create Firebase project
+2. Enable Firestore
+3. Add config to `.env`
+4. Uncomment Firebase code in `src/services/backendService.js`
 
-### 1. MBTA API Integration
+### Supabase
 
-**✅ API Key Already Configured**
+```bash
+npm install @supabase/supabase-js
+```
 
-The MBTA API key has been obtained and is ready to use. See `API_SETUP.md` for complete setup instructions.
+1. Create Supabase project
+2. Run SQL schema (see RPG_FEATURES.md)
+3. Add config to `.env`
+4. Uncomment Supabase code in `src/services/backendService.js`
 
-- **Rate Limit**: 1000 requests per minute
+See **[RPG_FEATURES.md](RPG_FEATURES.md)** for detailed backend setup.
+
+## 🤖 AI Quest Generation
+
+To enable dynamic AI-generated quests:
+
+1. Set up backend API endpoint
+2. Integrate LlamaIndex for RAG
+3. Connect OpenRouter for LLM
+4. Add ElevenLabs for TTS
+
+See **[RPG_FEATURES.md](RPG_FEATURES.md)** for complete integration guide.
+
+## 📋 Available Commands
+
+```bash
+# Development
+npm run dev          # Start dev server
+
+# Production
+npm run build        # Build for production
+npm run preview      # Preview production build
+
+# Code Quality
+npm run lint         # Run ESLint
+```
+
+## 🌐 MBTA API
+
+### Endpoints Used
+
+- `/routes` - Get all MBTA routes
+- `/stops` - Get stops for routes
+- `/predictions` - Real-time arrival/departure predictions
+- `/schedules` - Scheduled times (fallback)
+- `/vehicles` - Live vehicle positions
+- `/alerts` - Service alerts
+
+**Rate Limit**: 1000 requests/minute  
+**Documentation**: https://api-v3.mbta.com/docs/swagger/index.html
 - **Configuration**: See `.env.example` for template
 - **Helper Module**: `src/config/mbtaApi.js`
 - **Setup Guide**: `API_SETUP.md`
