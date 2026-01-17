@@ -4,7 +4,7 @@
 
 This project requires an MBTA API key to function. The key has already been obtained with the following details:
 
-- **API Key**: `213b44f07ed24e6bb74f064206968edd`
+- **API Key**: Obtain through https://api-v3.mbta.com/register 
 - **Rate Limit**: 1000 requests per minute
 - **API Version**: 2021-01-09
 - **Allowed Domains**: * (all domains)
@@ -19,7 +19,7 @@ This project requires an MBTA API key to function. The key has already been obta
 2. **Add the API key to .env:**
    Open the `.env` file and replace `your_api_key_here` with the actual API key:
    ```
-   VITE_MBTA_API_KEY=213b44f07ed24e6bb74f064206968edd
+   VITE_MBTA_API_KEY=your_api_key_here
    VITE_MBTA_API_BASE_URL=https://api-v3.mbta.com
    ```
 
