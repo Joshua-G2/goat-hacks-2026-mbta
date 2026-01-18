@@ -20,7 +20,7 @@ export default function App() {
         // MBTA refresh handled by useLiveMbta hook
         console.log('[App] MBTA refresh requested by supervisor');
       },
-      regenerateTripPlan: async (destinationStopId: string) => {
+      regenerateTripPlan: async (selectedDestinationId: string) => {
         console.log('[App] Trip plan regeneration requested by supervisor');
         // Trip plan regeneration handled by MapGameScreen
       },

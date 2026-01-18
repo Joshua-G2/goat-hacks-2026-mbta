@@ -1,18 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import InteractiveMap from './components/InteractiveMap'
-import StationSelector from './components/StationSelector'
+import InteractiveMap, { LiveMapLegend } from './components/InteractiveMap'
 import TransferGuidance from './components/TransferGuidance'
 import LiveConnectionFinder from './components/LiveConnectionFinder'
-import ConfidenceIndicator from './components/ConfidenceIndicator'
 import TripPlanner from './components/TripPlanner'
-import GameMap from './components/GameMap'
 import UserProfile from './components/UserProfile'
 import QuestDialog from './components/QuestDialog'
+import EventReportOverlay from './components/EventReportOverlay'
 import { generateQuest } from './services/questService'
 import MBTA_API from './config/mbtaApi'
 import { generateRandomTask, metersToMiles, checkMilestonReward, XP_REWARDS, createEventReport } from './utils/gameHelpers'
-import { subscribeToUserLocations, subscribeToEvents, reportEvent, updateUserLocation } from './services/backendService'
+import { subscribeToUserLocations, subscribeToEvents, reportEvent } from './services/backendService'
 
 /**
  * MBTA Real-Time Transfer Helper + RPG Game Mode
@@ -27,15 +25,39 @@ import { subscribeToUserLocations, subscribeToEvents, reportEvent, updateUserLoc
  * The MBTA API is configured in src/config/mbtaApi.js with the API key stored in .env
  * See API_SETUP.md for detailed setup instructions.
  */
-function App() {
+function App() { //fallback list of stations for the app to use
+  const IMPORTANT_STATIONS = [
+    { id: 'place-alfcl', name: 'Alewife', latitude: 42.395428, longitude: -71.142483 },
+    { id: 'place-brntn', name: 'Braintree', latitude: 42.207854, longitude: -71.001138 },
+    { id: 'place-asmnl', name: 'Ashmont', latitude: 42.284652, longitude: -71.064489 },
+    { id: 'place-forhl', name: 'Forest Hills', latitude: 42.300523, longitude: -71.113686 },
+    { id: 'place-ogmnl', name: 'Oak Grove', latitude: 42.43668, longitude: -71.071097 },
+    { id: 'place-wondl', name: 'Wonderland', latitude: 42.41342, longitude: -70.99167 },
+    { id: 'place-bomnl', name: 'Bowdoin', latitude: 42.361365, longitude: -71.062037 },
+    { id: 'place-river', name: 'Riverside', latitude: 42.337, longitude: -71.252 },
+    { id: 'place-lech', name: 'Lechmere', latitude: 42.3703, longitude: -71.0765 },
+    { id: 'place-sstat', name: 'South Station', latitude: 42.352271, longitude: -71.055242 },
+    { id: 'place-gover', name: 'Government Center', latitude: 42.359705, longitude: -71.059215 }
+  ];
+
   // Mode toggle - START IN TRANSIT MODE
   const [gameMode, setGameMode] = useState(false);
   
   // Transit mode state
-  const [selectedStops, setSelectedStops] = useState({
-    origin: null,
-    transfer: null,
-    destination: null,
+  const [selectedOrigin, setSelectedOrigin] = useState(null);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [selectedTransfer, setSelectedTransfer] = useState(null);
+  const [selectedOriginId, setSelectedOriginId] = useState(null);
+  const [selectedDestinationId, setSelectedDestinationId] = useState(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(new Date());
+  const [suppressShake, setSuppressShake] = useState(false);
+  const suppressShakeTimeoutRef = useRef(null);
+  const [legendVisibility, setLegendVisibility] = useState({
+    user: true,
+    origin: true,
+    transfer: true,
+    destination: true,
+    vehicles: true,
   });
 
   // Game mode state
@@ -207,12 +229,42 @@ function App() {
     }
   }, [miles]);
 
-  const handleStopChange = (type, value) => {
-    setSelectedStops(prev => ({
-      ...prev,
-      [type]: value,
-    }));
+  const selectedStops = {
+    origin: selectedOrigin,
+    transfer: selectedTransfer,
+    destination: selectedDestination,
   };
+
+  useEffect(() => {
+    setSelectedOriginId(selectedOrigin?.id || null);
+  }, [selectedOrigin]);
+
+  useEffect(() => {
+    setSelectedDestinationId(selectedDestination?.id || null);
+  }, [selectedDestination]);
+
+  const handleDataUpdated = () => {
+    setLastUpdatedAt(new Date());
+  };
+
+  const handleModeToggle = () => {
+    setSuppressShake(true);
+    if (suppressShakeTimeoutRef.current) {
+      clearTimeout(suppressShakeTimeoutRef.current);
+    }
+    setGameMode(prev => !prev);
+    suppressShakeTimeoutRef.current = setTimeout(() => {
+      setSuppressShake(false);
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (suppressShakeTimeoutRef.current) {
+        clearTimeout(suppressShakeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCompleteTask = (taskId) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
@@ -266,89 +318,83 @@ function App() {
             : 'Plan your journey with live predictions and transfer guidance'}
         </p>
         <button 
-          className="mode-toggle-button"
-          onClick={() => setGameMode(prev => !prev)}
+          className={`mode-toggle-button${suppressShake ? ' no-shake' : ''}`}
+          onClick={handleModeToggle}
         >
-          {gameMode ? '🗺️ Switch to Transit Mode' : '🎮 Switch to Game Mode'}
+          {gameMode ? '🗺️ Back to Transit Mode' : '🎮 Game Mode'}
         </button>
       </header>
 
       <div className="app-container">
-        {!gameMode ? (
-          /* Standard Transit Mode */
-          <>
-            {/* Left Column: Station Selection and Transfer Info */}
-            <aside className="app-sidebar">
-              <TripPlanner />
-              
-              <TransferGuidance 
-                transferStation={selectedStops.transfer}
-                walkingSpeed="normal"
-              />
-
-              <LiveConnectionFinder
-                originStop={selectedStops.origin}
-                transferStop={selectedStops.transfer}
-                destinationStop={selectedStops.destination}
-              />
-            </aside>
-
-            {/* Right Column: Map Display */}
-            <main className="app-main">
-              <InteractiveMap 
-                selectedStops={selectedStops}
-              />
-              
-              {/* Example confidence indicator */}
-              {selectedStops.origin && selectedStops.destination && (
-                <ConfidenceIndicator
-                  connection={{ arrivalTime: 300 }} // 5 minutes
-                  transferTime={240} // 4 minutes
-                  walkingTime={120} // 2 minutes
-                />
-              )}
-            </main>
-          </>
-        ) : (
-          /* Game Mode */
-          <>
-            {/* Left Column: User Profile and Stats */}
-            <aside className="app-sidebar game-sidebar">
+        <>
+          {/* Left Column */}
+          <aside className={`app-sidebar${gameMode ? ' game-sidebar' : ''}`}>
+            {gameMode ? (
               <UserProfile 
                 xp={xp}
                 miles={miles}
                 tasksCompleted={tasksCompleted}
+                mapLegend={(
+                  <LiveMapLegend
+                    className="embedded"
+                    legendVisibility={legendVisibility}
+                    onLegendVisibilityChange={setLegendVisibility}
+                  />
+                )}
               />
-              
-              {stations.length > 0 && (
-                <div className="quest-generator">
-                  <button 
-                    className="generate-quest-button"
-                    onClick={() => handleGenerateQuest(stations[0]?.id)}
-                  >
-                    📜 Generate New Quest
-                  </button>
-                </div>
-              )}
-            </aside>
+            ) : (
+              <>
+                <TripPlanner
+                  fallbackStations={IMPORTANT_STATIONS}
+                  selectedOrigin={selectedOrigin}
+                  selectedDestination={selectedDestination}
+                  selectedTransfer={selectedTransfer}
+                  onOriginChange={setSelectedOrigin}
+                  onDestinationChange={setSelectedDestination}
+                  onTransferChange={setSelectedTransfer}
+                />
+                
+                <TransferGuidance 
+                  selectedOrigin={selectedOrigin}
+                  selectedDestination={selectedDestination}
+                  transferStation={selectedStops.transfer}
+                  walkingSpeed="normal"
+                />
+              </>
+            )}
+          </aside>
 
-            {/* Right Column: Game Map */}
-            <main className="app-main">
-              <GameMap 
-                tasks={tasks}
-                xp={xp}
-                miles={miles}
-                onCompleteTask={handleCompleteTask}
-                onTravel={handleTravel}
-                userPosition={userPosition}
-                otherUsers={otherUsers}
-                events={events}
-                onReportEvent={handleReportEvent}
-                stations={stations}
+          {/* Right Column: Shared Map */}
+          <main className="app-main">
+            <div className="map-stack">
+              <InteractiveMap 
+                selectedStops={selectedStops}
+                onDataUpdated={handleDataUpdated}
+                legendVisibility={legendVisibility}
+                onLegendVisibilityChange={setLegendVisibility}
+                showLegend={!gameMode}
               />
-            </main>
-          </>
-        )}
+              {gameMode && (
+                <EventReportOverlay
+                  userLocation={userPosition}
+                  onReportEvent={handleReportEvent}
+                />
+              )}
+            </div>
+
+            {!gameMode && (
+              <LiveConnectionFinder
+                selectedOrigin={selectedOrigin}
+                selectedTransfer={selectedTransfer}
+                selectedDestination={selectedDestination}
+                selectedOriginId={selectedOriginId}
+                selectedDestinationId={selectedDestinationId}
+                lastUpdatedAt={lastUpdatedAt}
+                onDataUpdated={handleDataUpdated}
+              />
+            )}
+          </main>
+        </>
       </div>
 
       {/* Quest Dialog */}

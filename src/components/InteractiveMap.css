@@ -16,6 +16,10 @@
   z-index: 0;
 }
 
+.interactive-map-container .leaflet-container {
+  z-index: 0;
+}
+
 .interactive-map-container .leaflet-top.leaflet-left {
   left: auto;
   right: 0;
@@ -58,6 +62,11 @@
   pointer-events: auto;
 }
 
+.map-legend.embedded {
+  position: static;
+  margin-top: 16px;
+}
+
 .map-legend h4 {
   margin: 0 0 10px 0;
   font-size: 16px;
@@ -71,6 +80,7 @@
   padding: 6px 0;
   font-size: 13px;
   color: #333;
+  cursor: pointer;
 }
 
 .legend-dot {
@@ -102,9 +112,94 @@
   box-shadow: 0 0 6px rgba(76, 175, 80, 0.7);
 }
 
+.map-debug-toggle {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(255,255,255,0.95);
+  padding: 8px 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.map-debug-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #333;
+}
+
+.map-debug-coordinates {
+  position: fixed;
+  background: rgba(255,255,255,0.95);
+  color: #333;
+  padding: 6px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  font-size: 12px;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.selected-stop-marker {
+  filter: drop-shadow(0 0 8px rgba(15, 23, 42, 0.35));
+}
+
+.user-location-marker {
+  animation: pulse-ring 2s ease-out infinite;
+  filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.6));
+}
+
+.route-motion-line {
+  animation: route-dash 2.5s linear infinite;
+  stroke-linecap: round;
+  stroke-dasharray: 6 10;
+}
+
+.legend-toggle {
+  margin: 0;
+  accent-color: #2563eb;
+}
+
+.green-line-label div {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    stroke-width: 2px;
+    opacity: 1;
+  }
+  70% {
+    stroke-width: 10px;
+    opacity: 0.35;
+  }
+  100% {
+    stroke-width: 2px;
+    opacity: 1;
+  }
+}
+
+@keyframes route-dash {
+  to {
+    stroke-dashoffset: -32;
   }
 }
 

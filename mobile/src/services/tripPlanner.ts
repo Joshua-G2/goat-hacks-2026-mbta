@@ -180,7 +180,7 @@ const validateTripLeg = (leg: TripLeg): boolean => {
 export const planTrip = async (
   userLat: number,
   userLng: number,
-  destinationStop: StopData,
+  selectedDestination: StopData,
   allStops: StopData[],
   allRoutes: RouteData[]
 ): Promise<TripPlanResult> => {
@@ -196,7 +196,7 @@ export const planTrip = async (
       };
     }
 
-    if (!validateId(destinationStop.id)) {
+    if (!validateId(selectedDestination.id)) {
       return {
         ok: false,
         error: 'Invalid destination stop',
@@ -216,7 +216,7 @@ export const planTrip = async (
     }
 
     // Check if start and destination are the same
-    if (startStop.id === destinationStop.id) {
+    if (startStop.id === selectedDestination.id) {
       return {
         ok: false,
         error: 'Start and destination are the same stop',
@@ -226,7 +226,7 @@ export const planTrip = async (
 
     // Find routes for both stops
     const startRoutes = getRoutesForStop(startStop, allRoutes);
-    const destRoutes = getRoutesForStop(destinationStop, allRoutes);
+    const destRoutes = getRoutesForStop(selectedDestination, allRoutes);
 
     if (startRoutes.length === 0) {
       return {
@@ -255,8 +255,8 @@ export const planTrip = async (
         routeName: route.attributes.long_name || route.attributes.short_name,
         fromStopId: startStop.id,
         fromStopName: startStop.attributes.name,
-        toStopId: destinationStop.id,
-        toStopName: destinationStop.attributes.name,
+        toStopId: selectedDestination.id,
+        toStopName: selectedDestination.attributes.name,
       };
 
       if (!validateTripLeg(leg)) {
@@ -269,7 +269,7 @@ export const planTrip = async (
 
       const distance = calculateDistance(
         { latitude: startStop.attributes.latitude, longitude: startStop.attributes.longitude },
-        { latitude: destinationStop.attributes.latitude, longitude: destinationStop.attributes.longitude }
+        { latitude: selectedDestination.attributes.latitude, longitude: selectedDestination.attributes.longitude }
       );
 
       console.log(`[TripPlanner] Direct route found: ${route.attributes.long_name}`);
@@ -309,8 +309,8 @@ export const planTrip = async (
             routeName: destRoute.attributes.long_name || destRoute.attributes.short_name,
             fromStopId: transferStop.id,
             fromStopName: transferStop.attributes.name,
-            toStopId: destinationStop.id,
-            toStopName: destinationStop.attributes.name,
+            toStopId: selectedDestination.id,
+            toStopName: selectedDestination.attributes.name,
           };
 
           if (!validateTripLeg(leg1) || !validateTripLeg(leg2)) {
@@ -325,7 +325,7 @@ export const planTrip = async (
             ) +
             calculateDistance(
               { latitude: transferStop.attributes.latitude, longitude: transferStop.attributes.longitude },
-              { latitude: destinationStop.attributes.latitude, longitude: destinationStop.attributes.longitude }
+              { latitude: selectedDestination.attributes.latitude, longitude: selectedDestination.attributes.longitude }
             );
 
           console.log(`[TripPlanner] Transfer route found: ${startRoute.attributes.long_name} -> ${destRoute.attributes.long_name}`);
@@ -354,13 +354,13 @@ export const planTrip = async (
       routeName: bestRoute.attributes.long_name || bestRoute.attributes.short_name,
       fromStopId: startStop.id,
       fromStopName: startStop.attributes.name,
-      toStopId: destinationStop.id,
-      toStopName: destinationStop.attributes.name,
+      toStopId: selectedDestination.id,
+      toStopName: selectedDestination.attributes.name,
     };
 
     const distance = calculateDistance(
       { latitude: startStop.attributes.latitude, longitude: startStop.attributes.longitude },
-      { latitude: destinationStop.attributes.latitude, longitude: destinationStop.attributes.longitude }
+      { latitude: selectedDestination.attributes.latitude, longitude: selectedDestination.attributes.longitude }
     );
 
     return {

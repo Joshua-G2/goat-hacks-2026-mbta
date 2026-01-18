@@ -12,7 +12,9 @@
 
 // API Configuration
 export const MBTA_API_CONFIG = {
-  baseURL: import.meta.env.VITE_MBTA_API_BASE_URL || 'https://api-v3.mbta.com',
+  baseURL:
+    import.meta.env.VITE_MBTA_API_BASE_URL ||
+    (import.meta.env.DEV ? '/api/mbta' : 'https://api-v3.mbta.com'),
   apiKey: import.meta.env.VITE_MBTA_API_KEY,
   rateLimit: 1000, // requests per minute
 };
@@ -40,7 +42,11 @@ export const getMBTAHeaders = () => {
  * @returns {string} Full URL with query parameters
  */
 export const buildMBTAUrl = (endpoint, params = {}) => {
-  const url = new URL(endpoint, MBTA_API_CONFIG.baseURL);
+  const baseURL = MBTA_API_CONFIG.baseURL.startsWith('/')
+    ? `${window.location.origin}${MBTA_API_CONFIG.baseURL.replace(/\/$/, '')}/`
+    : MBTA_API_CONFIG.baseURL.replace(/\/?$/, '/');
+  const normalizedEndpoint = endpoint.replace(/^\/+/, '');
+  const url = new URL(normalizedEndpoint, baseURL);
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== null && value !== undefined) {
@@ -122,9 +128,10 @@ export const MBTA_API = {
    * @param {string} routeId - Route ID
    * @returns {Promise<Object>} Shape/polyline data
    */
-  getShapes: (routeId) => {
+  getShapes: (routeId, directionId = null) => {
     return fetchMBTA('/shapes', {
       'filter[route]': routeId,
+      'filter[direction_id]': directionId,
     });
   },
 

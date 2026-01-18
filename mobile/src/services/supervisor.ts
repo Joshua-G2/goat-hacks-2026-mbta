@@ -78,13 +78,13 @@ let supervisorState: SupervisorState = {
 interface SupervisorCallbacks {
   restartGPS: () => Promise<void>;
   refreshMBTA: () => Promise<void>;
-  regenerateTripPlan: (destinationStopId: string) => Promise<void>;
+  regenerateTripPlan: (selectedDestinationId: string) => Promise<void>;
   regenerateTasks: (tripPlan: TripPlan, preserveCompleted: boolean) => Promise<void>;
 }
 
 let callbacks: SupervisorCallbacks | null = null;
 let supervisorInterval: NodeJS.Timeout | null = null;
-let lastDestinationStopId: string | null = null;
+let lastSelectedDestinationId: string | null = null;
 let lastTripPlan: TripPlan | null = null;
 let lastTasks: GameTask[] = [];
 
@@ -319,13 +319,13 @@ const autoCorrectMBTA = async (): Promise<void> => {
 };
 
 const autoCorrectTripPlan = async (): Promise<void> => {
-  if (!callbacks?.regenerateTripPlan || !lastDestinationStopId) return;
+  if (!callbacks?.regenerateTripPlan || !lastSelectedDestinationId) return;
 
   const { valid } = supervisorState.health.tripPlan;
   
-  if (!valid && lastDestinationStopId) {
+  if (!valid && lastSelectedDestinationId) {
     try {
-      await callbacks.regenerateTripPlan(lastDestinationStopId);
+      await callbacks.regenerateTripPlan(lastSelectedDestinationId);
       addAutoFix({
         timestamp: Date.now(),
         category: 'tripPlan',
@@ -423,9 +423,9 @@ export const stopSupervisor = (): void => {
   console.log('[Supervisor] 🛑 Stopped');
 };
 
-export const updateTripPlan = (tripPlan: TripPlan | null, destinationStopId: string | null): void => {
+export const updateTripPlan = (tripPlan: TripPlan | null, selectedDestinationId: string | null): void => {
   lastTripPlan = tripPlan;
-  lastDestinationStopId = destinationStopId;
+  lastSelectedDestinationId = selectedDestinationId;
 };
 
 export const updateTasks = (tasks: GameTask[]): void => {

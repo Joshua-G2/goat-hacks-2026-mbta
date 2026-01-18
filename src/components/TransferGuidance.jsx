@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
+import ConfidenceIndicator from './ConfidenceIndicator';
 import './TransferGuidance.css';
 
-function TransferGuidance({ transferStation, walkingSpeed = 'normal' }) {
+function TransferGuidance({ selectedOrigin, selectedDestination, transferStation, walkingSpeed = 'normal' }) {
   const [speed, setSpeed] = useState(walkingSpeed);
+  const transferName = transferStation?.attributes?.name || transferStation?.name || transferStation;
+  const originName = selectedOrigin?.attributes?.name || selectedOrigin?.name || selectedOrigin;
+  const destinationName = selectedDestination?.attributes?.name || selectedDestination?.name || selectedDestination;
+  const hasEndpoints = Boolean(originName && destinationName);
   
   const speedMultipliers = {
     slow: 0.6,
@@ -12,6 +17,14 @@ function TransferGuidance({ transferStation, walkingSpeed = 'normal' }) {
 
   const baseTransferTime = 180;
   const calculatedTime = Math.round(baseTransferTime / speedMultipliers[speed]);
+  const confidenceBufferBySpeed = {
+    slow: 30,
+    normal: 120,
+    fast: 240,
+  };
+  const confidenceConnection = {
+    arrivalTime: calculatedTime + confidenceBufferBySpeed[speed],
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -23,10 +36,12 @@ function TransferGuidance({ transferStation, walkingSpeed = 'normal' }) {
     <div className="transfer-guidance">
       <h2>Transfer Guidance</h2>
       
-      {transferStation ? (
+      {hasEndpoints ? (
         <>
           <div className="transfer-info">
-            <h3>Transfer at: {transferStation}</h3>
+            <h3>
+              {transferName ? `Transfer at: ${transferName}` : `Trip: ${originName} → ${destinationName}`}
+            </h3>
             <div className="transfer-path">
               <div className="path-step">
                 <span className="step-icon">🚶</span>
@@ -55,6 +70,14 @@ function TransferGuidance({ transferStation, walkingSpeed = 'normal' }) {
 
             <div className="total-transfer-time">
               <strong>Estimated Transfer Time: {formatTime(calculatedTime)}</strong>
+            </div>
+
+            <div className="transfer-confidence">
+              <ConfidenceIndicator
+                connection={confidenceConnection}
+                transferTime={calculatedTime}
+                walkingTime={calculatedTime}
+              />
             </div>
           </div>
 
@@ -100,7 +123,7 @@ function TransferGuidance({ transferStation, walkingSpeed = 'normal' }) {
         </>
       ) : (
         <div className="no-transfer-selected">
-          <p>Select a transfer station to see guidance</p>
+          <p>Select origin and destination to see live connections</p>
         </div>
       )}
     </div>

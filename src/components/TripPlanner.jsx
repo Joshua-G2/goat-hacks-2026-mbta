@@ -16,12 +16,17 @@ import './TripPlanner.css';
  * Allows selecting origin, transfer (optional), and destination stops
  * Shows predictions and transfer confidence based on walk time and timing
  */
-function TripPlanner() {
+function TripPlanner({ 
+  fallbackStations = [], 
+  selectedOrigin,
+  selectedDestination,
+  selectedTransfer,
+  onOriginChange = () => {},
+  onDestinationChange = () => {},
+  onTransferChange = () => {}
+}) {
   const [originRoute, setOriginRoute] = useState(null);
-  const [originStop, setOriginStop] = useState(null);
-  const [transferStop, setTransferStop] = useState(null);
   const [destinationRoute, setDestinationRoute] = useState(null);
-  const [destinationStop, setDestinationStop] = useState(null);
   
   const [routes, setRoutes] = useState([]);
   const [originStops, setOriginStops] = useState([]);
@@ -29,7 +34,6 @@ function TripPlanner() {
   const [transferStops, setTransferStops] = useState([]);
   
   const [predictions, setPredictions] = useState(null);
-  const [walkSpeed, setWalkSpeed] = useState(5); // km/h
   const [transferStatus, setTransferStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -42,7 +46,7 @@ function TripPlanner() {
         setRoutes(data.data || []);
       } catch (err) {
         console.error('Error loading routes:', err);
-        setError('Failed to load routes');
+        setError('Failed to load routes; loading built-in destinations.');
       }
     };
     loadRoutes();
@@ -101,21 +105,21 @@ function TripPlanner() {
 
   // Fetch predictions and calculate transfer confidence
   useEffect(() => {
-    if (originStop && destinationStop) {
+    if (selectedOrigin && selectedDestination) {
       const fetchPredictionsAndAnalyze = async () => {
         setLoading(true);
         try {
           const promises = [
-            MBTA_API.getPredictions(originStop.id, { route: originRoute?.id })
+            MBTA_API.getPredictions(selectedOrigin.id, { route: originRoute?.id })
           ];
           
-          if (transferStop) {
+          if (selectedTransfer) {
             promises.push(
-              MBTA_API.getPredictions(transferStop.id, { route: destinationRoute?.id })
+              MBTA_API.getPredictions(selectedTransfer.id, { route: destinationRoute?.id })
             );
           } else {
             promises.push(
-              MBTA_API.getPredictions(destinationStop.id, { route: destinationRoute?.id })
+              MBTA_API.getPredictions(selectedDestination.id, { route: destinationRoute?.id })
             );
           }
           
@@ -128,18 +132,18 @@ function TripPlanner() {
           if (nextOriginDeparture && nextDestDeparture) {
             // Calculate walking time if transfer stop exists
             let walkMinutes = 0;
-            if (transferStop && originStop.attributes?.latitude) {
+            if (selectedTransfer && selectedOrigin.attributes?.latitude) {
               const dist = calculateDistance(
                 {
-                  latitude: originStop.attributes.latitude,
-                  longitude: originStop.attributes.longitude
+                  latitude: selectedOrigin.attributes.latitude,
+                  longitude: selectedOrigin.attributes.longitude
                 },
                 {
-                  latitude: transferStop.attributes?.latitude || originStop.attributes.latitude,
-                  longitude: transferStop.attributes?.longitude || originStop.attributes.longitude
+                  latitude: selectedTransfer.attributes?.latitude || selectedOrigin.attributes.latitude,
+                  longitude: selectedTransfer.attributes?.longitude || selectedOrigin.attributes.longitude
                 }
               );
-              walkMinutes = computeWalkMinutes(dist, kmhToMps(walkSpeed));
+              walkMinutes = computeWalkMinutes(dist, kmhToMps(5));
             }
             
             // Determine transfer confidence
@@ -167,16 +171,34 @@ function TripPlanner() {
       const interval = setInterval(fetchPredictionsAndAnalyze, 30000);
       return () => clearInterval(interval);
     }
-  }, [originStop, transferStop, destinationStop, walkSpeed, originRoute, destinationRoute]);
+  }, [selectedOrigin, selectedTransfer, selectedDestination, originRoute, destinationRoute]);
 
   const handleRouteSelect = (type, routeId) => {
     const route = routes.find(r => r.id === routeId);
     if (type === 'origin') {
       setOriginRoute(route);
-      setOriginStop(null);
+      onOriginChange(null);
     } else {
       setDestinationRoute(route);
-      setDestinationStop(null);
+      onDestinationChange(null);
+    }
+  };
+
+  const handleFallbackStopSelect = (type, stopId) => {
+    const stop = fallbackStations.find(s => s.id === stopId);
+    if (!stop) return;
+    const normalizedStop = {
+      id: stop.id,
+      attributes: {
+        name: stop.name,
+        latitude: stop.latitude,
+        longitude: stop.longitude
+      }
+    };
+    if (type === 'origin') {
+      onOriginChange(normalizedStop);
+    } else {
+      onDestinationChange(normalizedStop);
     }
   };
 
@@ -186,11 +208,11 @@ function TripPlanner() {
     const stop = stopsList.find(s => s.id === stopId);
     
     if (type === 'origin') {
-      setOriginStop(stop);
+      onOriginChange(stop);
     } else if (type === 'transfer') {
-      setTransferStop(stop);
+      onTransferChange(stop);
     } else {
-      setDestinationStop(stop);
+      onDestinationChange(stop);
     }
   };
 
@@ -199,124 +221,149 @@ function TripPlanner() {
       <h2>🚇 Plan Your Trip</h2>
       
       {error && <div className="error-message">{error}</div>}
+
+      {error && fallbackStations.length > 0 && (
+        <>
+          <div className="planner-section">
+            <h3>Origin</h3>
+            <select
+              value={selectedOrigin?.id || ''}
+              onChange={(e) => handleFallbackStopSelect('origin', e.target.value)}
+              className="stop-select"
+            >
+              <option value="">-- Select Station --</option>
+              {fallbackStations.map(stop => (
+                <option key={stop.id} value={stop.id}>
+                  {stop.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="planner-section">
+            <h3>Destination</h3>
+            <select
+              value={selectedDestination?.id || ''}
+              onChange={(e) => handleFallbackStopSelect('destination', e.target.value)}
+              className="stop-select"
+            >
+              <option value="">-- Select Station --</option>
+              {fallbackStations.map(stop => (
+                <option key={stop.id} value={stop.id}>
+                  {stop.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
       
-      <div className="planner-section">
-        <h3>Origin</h3>
-        <select 
-          value={originRoute?.id || ''} 
-          onChange={(e) => handleRouteSelect('origin', e.target.value)}
-          className="route-select"
-        >
-          <option value="">-- Select Route --</option>
-          {routes.map(route => (
-            <option key={route.id} value={route.id}>
-              {route.attributes.long_name}
-            </option>
-          ))}
-        </select>
-        
-        {originRoute && (
+      {!error && (
+        <div className="planner-section">
+          <h3>Origin</h3>
           <select 
-            value={originStop?.id || ''} 
-            onChange={(e) => handleStopSelect('origin', e.target.value)}
-            className="stop-select"
+            value={originRoute?.id || ''} 
+            onChange={(e) => handleRouteSelect('origin', e.target.value)}
+            className="route-select"
           >
-            <option value="">-- Select Stop --</option>
-            {originStops.map(stop => (
-              <option key={stop.id} value={stop.id}>
-                {stop.attributes.name}
+            <option value="">-- Select Route --</option>
+            {routes.map(route => (
+              <option key={route.id} value={route.id}>
+                {route.attributes.long_name}
               </option>
             ))}
           </select>
-        )}
-      </div>
-
-      <div className="planner-section">
-        <h3>Transfer (Optional)</h3>
-        <select 
-          value={transferStop?.id || ''} 
-          onChange={(e) => handleStopSelect('transfer', e.target.value)}
-          className="stop-select"
-          disabled={!originRoute || !destinationRoute}
-        >
-          <option value="">-- No Transfer --</option>
-          {transferStops.map(stop => (
-            <option key={stop.id} value={stop.id}>
-              {stop.attributes.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="planner-section">
-        <h3>Destination</h3>
-        <select 
-          value={destinationRoute?.id || ''} 
-          onChange={(e) => handleRouteSelect('destination', e.target.value)}
-          className="route-select"
-        >
-          <option value="">-- Select Route --</option>
-          {routes.map(route => (
-            <option key={route.id} value={route.id}>
-              {route.attributes.long_name}
-            </option>
-          ))}
-        </select>
-        
-        {destinationRoute && (
-          <select 
-            value={destinationStop?.id || ''} 
-            onChange={(e) => handleStopSelect('destination', e.target.value)}
-            className="stop-select"
-          >
-            <option value="">-- Select Stop --</option>
-            {destStops.map(stop => (
-              <option key={stop.id} value={stop.id}>
-                {stop.attributes.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      <div className="planner-section">
-        <h3>Walking Speed</h3>
-        <div className="speed-control">
-          <input
-            type="range"
-            min="3"
-            max="6"
-            step="0.5"
-            value={walkSpeed}
-            onChange={(e) => setWalkSpeed(parseFloat(e.target.value))}
-            className="speed-slider"
-          />
-          <span className="speed-value">{walkSpeed} km/h</span>
+          
+          {originRoute && (
+            <select 
+            value={selectedOrigin?.id || ''} 
+              onChange={(e) => handleStopSelect('origin', e.target.value)}
+              className="stop-select"
+            >
+              <option value="">-- Select Stop --</option>
+              {originStops.map(stop => (
+                <option key={stop.id} value={stop.id}>
+                  {stop.attributes.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-      </div>
+      )}
+
+      {!error && (
+        <div className="planner-section">
+          <h3>Transfer (Optional)</h3>
+          <select 
+            value={selectedTransfer?.id || ''} 
+            onChange={(e) => handleStopSelect('transfer', e.target.value)}
+            className="stop-select"
+            disabled={!originRoute || !destinationRoute}
+          >
+            <option value="">-- No Transfer --</option>
+            {transferStops.map(stop => (
+              <option key={stop.id} value={stop.id}>
+                {stop.attributes.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!error && (
+        <div className="planner-section">
+          <h3>Destination</h3>
+          <select 
+            value={destinationRoute?.id || ''} 
+            onChange={(e) => handleRouteSelect('destination', e.target.value)}
+            className="route-select"
+          >
+            <option value="">-- Select Route --</option>
+            {routes.map(route => (
+              <option key={route.id} value={route.id}>
+                {route.attributes.long_name}
+              </option>
+            ))}
+          </select>
+          
+          {destinationRoute && (
+            <select 
+              value={selectedDestination?.id || ''} 
+              onChange={(e) => handleStopSelect('destination', e.target.value)}
+              className="stop-select"
+            >
+              <option value="">-- Select Stop --</option>
+              {destStops.map(stop => (
+                <option key={stop.id} value={stop.id}>
+                  {stop.attributes.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       {loading && <div className="loading">Loading predictions...</div>}
 
       {predictions && !loading && (
         <div className="predictions-section">
-          <h3>Next Departures</h3>
           
           <div className="prediction-item">
-            <strong>From {originStop?.attributes.name}:</strong>
+            <strong>{selectedOrigin?.attributes.name}</strong>
             <div className="prediction-time">
               {predictions.originPred?.data?.[0]?.attributes?.departure_time 
                 ? formatPredictionTime(predictions.originPred.data[0].attributes.departure_time)
-                : 'No predictions available'}
+                : '—'}
             </div>
           </div>
 
-          {transferStop && (
+          {selectedTransfer && (
             <div className="prediction-item">
-              <strong>Transfer at {transferStop.attributes.name}:</strong>
+              <strong>{selectedTransfer.attributes.name}</strong>
               <div className="prediction-time">
                 {predictions.destPred?.data?.[0]?.attributes?.departure_time 
                   ? formatPredictionTime(predictions.destPred.data[0].attributes.departure_time)
-                  : 'No predictions available'}
+                  : '—'}
               </div>
               <div className="walk-time">
                 Walking time: {predictions.walkMinutes?.toFixed(1)} min
@@ -324,18 +371,18 @@ function TripPlanner() {
             </div>
           )}
 
-          {!transferStop && destinationStop && (
+          {!selectedTransfer && selectedDestination && (
             <div className="prediction-item">
-              <strong>Arriving at {destinationStop.attributes.name}:</strong>
+              <strong>{selectedDestination.attributes.name}</strong>
               <div className="prediction-time">
                 {predictions.destPred?.data?.[0]?.attributes?.arrival_time 
                   ? formatPredictionTime(predictions.destPred.data[0].attributes.arrival_time)
-                  : 'No predictions available'}
+                  : '—'}
               </div>
             </div>
           )}
 
-          {transferStatus && transferStop && (
+          {transferStatus && selectedTransfer && (
             <div className={`transfer-status status-${transferStatus.toLowerCase()}`}>
               <strong>Transfer Status:</strong> {transferStatus}
               {transferStatus === 'Likely' && ' ✅'}

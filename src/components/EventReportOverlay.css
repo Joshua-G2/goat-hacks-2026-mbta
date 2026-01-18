@@ -1,0 +1,71 @@
+.event-report-overlay {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 5000;
+  pointer-events: auto;
+}
+
+.report-button {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.report-button:hover {
+  background: #ff5252;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+.event-menu {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  min-width: 200px;
+}
+
+.event-option {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.event-option:hover {
+  background: #f0f0f0;
+}
+
+.event-option:last-child {
+  margin-bottom: 0;
+}
+
+.event-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .event-report-overlay {
+    position: static;
+    margin: 12px 0 0;
+  }
+}

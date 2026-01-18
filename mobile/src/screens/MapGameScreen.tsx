@@ -21,7 +21,7 @@ import type { StopData } from '@api/mbtaClient';
 
 interface TripState {
   startLocation: 'current' | StopData | null;
-  destinationStop: StopData | null;
+  selectedDestination: StopData | null;
 }
 
 export const MapGameScreen: React.FC = () => {
@@ -32,7 +32,7 @@ export const MapGameScreen: React.FC = () => {
   // Trip state
   const [trip, setTrip] = useState<TripState>({
     startLocation: 'current',
-    destinationStop: null,
+    selectedDestination: null,
   });
 
   // Search state
@@ -119,7 +119,7 @@ export const MapGameScreen: React.FC = () => {
         if (result.ok && result.data?.data && result.data.data.length > 0) {
           const refetchedStop = result.data.data[0];
           if (refetchedStop.attributes.latitude && refetchedStop.attributes.longitude) {
-            setTrip({ ...trip, destinationStop: refetchedStop });
+            setTrip({ ...trip, selectedDestination: refetchedStop });
             setShowSearchModal(false);
             
             // Zoom to destination
@@ -151,7 +151,7 @@ export const MapGameScreen: React.FC = () => {
       return;
     }
 
-    setTrip({ ...trip, destinationStop: stop });
+    setTrip({ ...trip, selectedDestination: stop });
     setShowSearchModal(false);
 
     // Zoom to destination
@@ -165,7 +165,7 @@ export const MapGameScreen: React.FC = () => {
 
   // Clear destination
   const handleClearDestination = () => {
-    setTrip({ ...trip, destinationStop: null });
+    setTrip({ ...trip, selectedDestination: null });
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -228,10 +228,10 @@ export const MapGameScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {trip.destinationStop && (
+          {trip.selectedDestination && (
             <View style={styles.selectedStop}>
               <Text style={styles.selectedStopText}>
-                🎯 {trip.destinationStop.attributes.name}
+                🎯 {trip.selectedDestination.attributes.name}
               </Text>
               <TouchableOpacity onPress={handleClearDestination}>
                 <Text style={styles.clearButton}>✕</Text>

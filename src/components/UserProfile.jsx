@@ -7,7 +7,7 @@ import './UserProfile.css';
  * 
  * Displays user's level, title, XP progress, and achievements
  */
-function UserProfile({ xp, miles, tasksCompleted }) {
+function UserProfile({ xp, miles, tasksCompleted, mapLegend = null }) {
   const [levelInfo, setLevelInfo] = useState(getTitleForXp(0));
   const [achievements, setAchievements] = useState([]);
 
@@ -101,6 +101,8 @@ function UserProfile({ xp, miles, tasksCompleted }) {
           </div>
         </div>
       </div>
+
+      {mapLegend && <div className="user-profile-legend">{mapLegend}</div>}
 
       {/* Achievements Section */}
       {achievements.length > 0 && (

@@ -73,6 +73,14 @@
   color: #003da5;
 }
 
+.transfer-confidence {
+  margin-top: 1rem;
+}
+
+.transfer-confidence .confidence-indicator {
+  margin: 0;
+}
+
 .walking-speed-control {
   margin: 1.5rem 0;
   padding: 1rem;
