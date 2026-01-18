@@ -212,7 +212,74 @@
   /* Inline styles handle this */
 }
 
+.player-icon-3d {
+  /* 3D canvas marker */
+  background: transparent !important;
+  border: none !important;
+}
+
+.player-icon-3d canvas {
+  display: block;
+}
+
 /* === DESTINATION MARKER === */
 .dest-marker {
   /* Inline styles handle this */
+}
+
+/* === ANIMATIONS === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes trainSlide {
+  0% {
+    transform: translateX(-200%) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(0) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-15deg);
+  }
+  75% {
+    transform: rotate(15deg);
+  }
+}
+
+@keyframes jump {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-60px) scale(1.2);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
 }

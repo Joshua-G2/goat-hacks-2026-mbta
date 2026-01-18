@@ -141,7 +141,7 @@ function App() { //fallback list of stations for the app to use
         setTasks(prev => [...prev, newTask]);
       }
     }
-  }, [gameMode, userPosition, stations, tasks.length]);
+  }, [gameMode, userPosition, stations]);
 
   // Subscribe to real-time updates (social features)
   useEffect(() => {
@@ -220,7 +220,7 @@ function App() { //fallback list of stations for the app to use
 
       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, [gameMode, lastPosition, miles]);
+  }, [lastPosition]);
 
   // Check for milestone rewards when miles change
   useEffect(() => {
@@ -360,7 +360,7 @@ function App() { //fallback list of stations for the app to use
           <main className={`app-main ${gameMode ? 'full-screen-game' : ''}`}>
             {gameMode ? (
               <>
-                <GameScreen />
+                <GameScreen key="game-screen-persistent" />
                 <EventReportOverlay
                   userLocation={userPosition}
                   onReportEvent={handleReportEvent}
