@@ -13,6 +13,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+const ORANGE_LINE_COLOR = '#FF6A00';
+
 // Component to center map on user location
 function LocationMarker({ position }) {
   if (!position) return null;
@@ -33,15 +35,21 @@ function LocationMarker({ position }) {
   );
 }
 
-function FitBounds({ origin, destination, allowAutoFit }) {
+function FitBounds({ origin, destination, transfers = [], allowAutoFit, onFit }) {
   const map = useMap();
 
   useEffect(() => {
     if (allowAutoFit && origin && destination) {
-      const bounds = L.latLngBounds([origin, destination]);
-      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+      const extraPoints = transfers.filter(Boolean);
+      const bounds = L.latLngBounds([origin, destination, ...extraPoints]);
+      map.fitBounds(bounds, {
+        paddingTopLeft: [200, 80],
+        paddingBottomRight: [80, 80],
+        maxZoom: 13,
+      });
+      onFit?.();
     }
-  }, [origin, destination, map, allowAutoFit]);
+  }, [origin, destination, transfers, map, allowAutoFit, onFit]);
 
   return null;
 }
@@ -61,7 +69,7 @@ function DebugMouseTracker({ enabled, onMove, onLeave }) {
   return null;
 }
 
-function TripControlStack({ origin, destination, userLocation, onReset }) {
+function TripControlStack({ origin, destination, transfers = [], userLocation, onReset }) {
   const map = useMap();
 
   useEffect(() => {
@@ -94,8 +102,13 @@ function TripControlStack({ origin, destination, userLocation, onReset }) {
       L.DomEvent.on(tripButton, 'click', () => {
         onReset?.();
         if (origin && destination) {
-          const bounds = L.latLngBounds([origin, destination]);
-          map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+          const extraPoints = transfers.filter(Boolean);
+          const bounds = L.latLngBounds([origin, destination, ...extraPoints]);
+          map.fitBounds(bounds, {
+            paddingTopLeft: [200, 80],
+            paddingBottomRight: [80, 80],
+            maxZoom: 13,
+          });
         }
       });
       return container;
@@ -117,6 +130,7 @@ function InteractiveMap({
   onDataUpdated = () => {},
   legendVisibility: controlledLegendVisibility,
   onLegendVisibilityChange,
+  onTransferStationsChange,
   showLegend = true,
   debugEnabled: controlledDebugEnabled,
   onDebugEnabledChange,
@@ -150,14 +164,40 @@ function InteractiveMap({
       green: true,
       mattapan: true,
     },
-    trains: true,
-    buses: true,
-    ferries: true,
+    trains: false,
+    buses: false,
+    ferries: false,
   });
-  const activeLegendVisibility = controlledLegendVisibility || legendVisibility;
+  const activeLegendVisibility = controlledLegendVisibility
+    ? {
+        ...legendVisibility,
+        ...controlledLegendVisibility,
+        stationLines: {
+          ...legendVisibility.stationLines,
+          ...controlledLegendVisibility.stationLines,
+        },
+      }
+    : legendVisibility;
   const updateLegendVisibility = onLegendVisibilityChange || setLegendVisibility;
   const activeDebugEnabled =
     typeof controlledDebugEnabled === 'boolean' ? controlledDebugEnabled : debugEnabled;
+
+  const getStationGroupsFromRouteIds = (routeIds, routeTypeLookup) => {
+    if (!Array.isArray(routeIds) || routeIds.length === 0) return [];
+    const groups = new Set();
+    if (routeIds.some((routeId) => routeId?.toLowerCase().includes('mattapan'))) {
+      groups.add('mattapan');
+    }
+    if (routeIds.some((routeId) => routeTypeLookup[routeId] === 2)) {
+      groups.add('commuter');
+    }
+    const normalized = routeIds.map((routeId) => routeId?.toLowerCase() || '');
+    if (normalized.some((routeId) => routeId.startsWith('red'))) groups.add('red');
+    if (normalized.some((routeId) => routeId.startsWith('orange'))) groups.add('orange');
+    if (normalized.some((routeId) => routeId.startsWith('blue'))) groups.add('blue');
+    if (normalized.some((routeId) => routeId.startsWith('green'))) groups.add('green');
+    return Array.from(groups);
+  };
 
   // Boston default center
   const defaultCenter = [42.3601, -71.0589];
@@ -238,6 +278,12 @@ function InteractiveMap({
           routeIds: Array.from(stop.routeIds || []),
         }));
 
+        const transferStationList = markers.filter((stop) => {
+          const groups = getStationGroupsFromRouteIds(stop.routeIds, routeTypeById);
+          return groups.length >= 2;
+        });
+
+        onTransferStationsChange?.(transferStationList);
         setStops(markers);
         setStopMarkers(markers);
         setRouteColors(Object.fromEntries(routeColorById));
@@ -252,7 +298,7 @@ function InteractiveMap({
     };
 
     loadMBTAData();
-  }, []);
+  }, [onTransferStationsChange]);
 
   // Load route shapes when routes change
   useEffect(() => {
@@ -428,11 +474,20 @@ function InteractiveMap({
     selectedStops?.destination?.latitude,
     selectedStops?.destination?.longitude,
   ]);
+  const transferPosition = useMemo(() => {
+    const coords = getStopCoordinates(selectedStops?.transfer);
+    return coords ? [coords[0], coords[1]] : null;
+  }, [
+    selectedStops?.transfer?.attributes?.latitude,
+    selectedStops?.transfer?.attributes?.longitude,
+    selectedStops?.transfer?.latitude,
+    selectedStops?.transfer?.longitude,
+  ]);
   useEffect(() => {
     if (originPosition && destinationPosition) {
       setAutoFitEnabled(true);
     }
-  }, [originPosition, destinationPosition]);
+  }, [originPosition, destinationPosition, transferPosition]);
 
   const getRouteIdsForStop = (stop) => {
     if (Array.isArray(stop?.routeIds) && stop.routeIds.length > 0) {
@@ -485,7 +540,7 @@ function InteractiveMap({
     if (id.includes('mattapan')) return '#8B1E1E';
     if (id.startsWith('red')) return '#DA291C';
     if (id.startsWith('blue')) return '#003DA5';
-    if (id.startsWith('orange')) return '#FF8C00';
+    if (id.startsWith('orange')) return ORANGE_LINE_COLOR;
     if (id.startsWith('green')) return '#00843D';
     return '#2196F3';
   };
@@ -508,6 +563,10 @@ function InteractiveMap({
 
     const commuterRoute = routeIds.find((routeId) => routeTypes[routeId] === 2);
     if (commuterRoute) return '#7E3FF2';
+
+    if (routeIds.some((routeId) => routeId?.toLowerCase().startsWith('orange'))) {
+      return ORANGE_LINE_COLOR;
+    }
 
     const apiColor = routeIds.map((routeId) => normalizeHexColor(routeColors[routeId])).find(Boolean);
     if (apiColor) return brightenHexColor(apiColor, 0.18);
@@ -556,7 +615,7 @@ function InteractiveMap({
     const colorByGroup = {
       commuter: '#7E3FF2',
       red: '#DA291C',
-      orange: '#FF8C00',
+      orange: ORANGE_LINE_COLOR,
       blue: '#003DA5',
       green: '#00843D',
       mattapan: '#8B1E1E',
@@ -570,7 +629,7 @@ function InteractiveMap({
       .map((group) => {
         const base = colorByGroup[group];
         if (!base) return null;
-        if (group === 'mattapan') return base;
+        if (group === 'mattapan' || group === 'orange') return base;
         return brightenHexColor(base, 0.18) || base;
       })
       .filter(Boolean);
@@ -578,6 +637,7 @@ function InteractiveMap({
 
   const getRouteColor = (routeId) => {
     if (routeId?.toLowerCase().includes('mattapan')) return '#8B1E1E';
+    if (routeId?.toLowerCase().startsWith('orange')) return ORANGE_LINE_COLOR;
     const matched = routes.find((route) => route.id === routeId);
     return matched?.attributes?.color ? `#${matched.attributes.color}` : '#1F2937';
   };
@@ -638,7 +698,7 @@ function InteractiveMap({
     }
 
     if (routeIds.some((routeId) => routeId?.startsWith('Orange'))) {
-      addBadge('orange', 'OL', '#FF8C00');
+      addBadge('orange', 'OL', ORANGE_LINE_COLOR);
     }
 
     if (routeIds.some((routeId) => routeId?.startsWith('Blue'))) {
@@ -740,11 +800,14 @@ function InteractiveMap({
         <FitBounds
           origin={originPosition}
           destination={destinationPosition}
+          transfers={transferPosition ? [transferPosition] : []}
           allowAutoFit={autoFitEnabled}
+          onFit={() => setAutoFitEnabled(false)}
         />
         <TripControlStack
           origin={originPosition}
           destination={destinationPosition}
+          transfers={transferPosition ? [transferPosition] : []}
           userLocation={userLocation}
           onReset={() => setAutoFitEnabled(true)}
         />
@@ -805,6 +868,7 @@ function InteractiveMap({
           const popup = (
             <Popup>
               <div className="stop-popup">
+                {isTransfer && <strong>Transfer</strong>}
                 <div className="stop-name-row">
                   {stopBadges.length > 0 && (
                     <div className="stop-line-badges inline">
@@ -963,6 +1027,7 @@ function InteractiveMap({
         <LiveMapLegend
           legendVisibility={activeLegendVisibility}
           onLegendVisibilityChange={updateLegendVisibility}
+          selectedStopColor={getSelectedStopColor()}
         />
       )}
 
@@ -985,16 +1050,17 @@ function InteractiveMap({
 export function LiveMapLegend({
   legendVisibility,
   onLegendVisibilityChange,
+  selectedStopColor = '#0b2d6b',
   className = '',
 }) {
   const [stationsExpanded, setStationsExpanded] = useState(false);
   const stationLineOptions = [
     { key: 'commuter', label: 'Commuter Rail', color: '#7E3FF2' },
     { key: 'red', label: 'Red Line', color: '#DA291C' },
-    { key: 'orange', label: 'Orange Line', color: '#FF8C00' },
+    { key: 'orange', label: 'Orange Line', color: ORANGE_LINE_COLOR },
     { key: 'blue', label: 'Blue Line', color: '#003DA5' },
     { key: 'green', label: 'Green Line', color: '#00843D' },
-    { key: 'mattapan', label: 'Mattapan Trolley', color: '#FFD200' },
+    { key: 'mattapan', label: 'Mattapan Trolley', color: '#8B1E1E' },
   ];
 
   const handleStationsToggle = (checked) => {
@@ -1045,8 +1111,8 @@ export function LiveMapLegend({
             }))
           }
         />
-        <div className="legend-dot" style={{ background: '#000000' }}></div>
-        <span>Origin / Destination</span>
+        <div className="legend-dot" style={{ background: selectedStopColor }}></div>
+        <span>Origin & Destination</span>
       </label>
       <label className="legend-item">
         <input
@@ -1077,7 +1143,7 @@ export function LiveMapLegend({
           onClick={() => setStationsExpanded((prev) => !prev)}
           aria-label="Toggle station line filters"
         >
-          ▾
+          <span className="legend-dropdown-icon">▾</span>
         </button>
       </div>
       {stationsExpanded && (

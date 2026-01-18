@@ -162,6 +162,7 @@ export const MBTA_API = {
     return fetchMBTA('/schedules', {
       'filter[stop]': stopId,
       'filter[min_time]': filters.min_time || 'now',
+      'filter[max_time]': filters.max_time,
       'filter[route]': filters.route,
       sort: 'arrival_time',
     });

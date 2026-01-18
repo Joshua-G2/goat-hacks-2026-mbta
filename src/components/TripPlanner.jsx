@@ -23,7 +23,9 @@ function TripPlanner({
   selectedTransfer,
   onOriginChange = () => {},
   onDestinationChange = () => {},
-  onTransferChange = () => {}
+  onTransferChange = () => {},
+  onOriginRouteChange = () => {},
+  onDestinationRouteChange = () => {}
 }) {
   const [originRoute, setOriginRoute] = useState(null);
   const [destinationRoute, setDestinationRoute] = useState(null);
@@ -84,7 +86,13 @@ function TripPlanner({
 
   // When both routes selected, find potential transfer points
   useEffect(() => {
-    if (originRoute && destinationRoute && originRoute.id !== destinationRoute.id) {
+    if (originRoute && destinationRoute) {
+      if (originRoute.id === destinationRoute.id) {
+        setTransferStops([]);
+        onTransferChange(null);
+        return;
+      }
+
       const findTransfers = async () => {
         try {
           const [route1Data, route2Data] = await Promise.all([
@@ -95,13 +103,16 @@ function TripPlanner({
           const route1StopIds = new Set(route1Data.data.map(s => s.id));
           const commonStops = route2Data.data.filter(s => route1StopIds.has(s.id));
           setTransferStops(commonStops);
+          if (commonStops.length === 1) {
+            onTransferChange(commonStops[0]);
+          }
         } catch (err) {
           console.error('Error finding transfer stops:', err);
         }
       };
       findTransfers();
     }
-  }, [originRoute, destinationRoute]);
+  }, [originRoute, destinationRoute, onTransferChange]);
 
   // Fetch predictions and calculate transfer confidence
   useEffect(() => {
@@ -177,9 +188,11 @@ function TripPlanner({
     const route = routes.find(r => r.id === routeId);
     if (type === 'origin') {
       setOriginRoute(route);
+      onOriginRouteChange(route?.id || null);
       onOriginChange(null);
     } else {
       setDestinationRoute(route);
+      onDestinationRouteChange(route?.id || null);
       onDestinationChange(null);
     }
   };
@@ -339,56 +352,6 @@ function TripPlanner({
                 </option>
               ))}
             </select>
-          )}
-        </div>
-      )}
-
-      {loading && <div className="loading">Loading predictions...</div>}
-
-      {predictions && !loading && (
-        <div className="predictions-section">
-          
-          <div className="prediction-item">
-            <strong>From {selectedOrigin?.attributes.name}:</strong>
-            <div className="prediction-time">
-              {predictions.originPred?.data?.[0]?.attributes?.departure_time 
-                ? formatPredictionTime(predictions.originPred.data[0].attributes.departure_time)
-                : 'No predictions available'}
-            </div>
-          </div>
-
-          {selectedTransfer && (
-            <div className="prediction-item">
-              <strong>Transfer at {selectedTransfer.attributes.name}:</strong>
-              <div className="prediction-time">
-                {predictions.destPred?.data?.[0]?.attributes?.departure_time 
-                  ? formatPredictionTime(predictions.destPred.data[0].attributes.departure_time)
-                  : 'No predictions available'}
-              </div>
-              <div className="walk-time">
-                Walking time: {predictions.walkMinutes?.toFixed(1)} min
-              </div>
-            </div>
-          )}
-
-          {!selectedTransfer && selectedDestination && (
-            <div className="prediction-item">
-              <strong>Arriving at {selectedDestination.attributes.name}:</strong>
-              <div className="prediction-time">
-                {predictions.destPred?.data?.[0]?.attributes?.arrival_time 
-                  ? formatPredictionTime(predictions.destPred.data[0].attributes.arrival_time)
-                  : 'No predictions available'}
-              </div>
-            </div>
-          )}
-
-          {transferStatus && selectedTransfer && (
-            <div className={`transfer-status status-${transferStatus.toLowerCase()}`}>
-              <strong>Transfer Status:</strong> {transferStatus}
-              {transferStatus === 'Likely' && ' ✅'}
-              {transferStatus === 'Risky' && ' ⚠️'}
-              {transferStatus === 'Unlikely' && ' ❌'}
-            </div>
           )}
         </div>
       )}

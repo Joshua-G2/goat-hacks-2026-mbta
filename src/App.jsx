@@ -48,6 +48,8 @@ function App() { //fallback list of stations for the app to use
   const [selectedOrigin, setSelectedOrigin] = useState(null);
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [selectedTransfer, setSelectedTransfer] = useState(null);
+  const [originRouteId, setOriginRouteId] = useState(null);
+  const [destinationRouteId, setDestinationRouteId] = useState(null);
   const [selectedOriginId, setSelectedOriginId] = useState(null);
   const [selectedDestinationId, setSelectedDestinationId] = useState(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(new Date());
@@ -80,6 +82,7 @@ function App() { //fallback list of stations for the app to use
 
   // MBTA data
   const [stations, setStations] = useState([]);
+  const [transferStations, setTransferStations] = useState([]);
 
   // Load MBTA stations on mount
   useEffect(() => {
@@ -345,12 +348,17 @@ function App() { //fallback list of stations for the app to use
                   onOriginChange={setSelectedOrigin}
                   onDestinationChange={setSelectedDestination}
                   onTransferChange={setSelectedTransfer}
+                  onOriginRouteChange={setOriginRouteId}
+                  onDestinationRouteChange={setDestinationRouteId}
                 />
                 
                 <TransferGuidance 
                   selectedOrigin={selectedOrigin}
                   selectedDestination={selectedDestination}
                   transferStation={selectedStops.transfer}
+                  transferStations={transferStations}
+                  originRouteId={originRouteId}
+                  destinationRouteId={destinationRouteId}
                   walkingSpeed="normal"
                 />
           </aside>
@@ -374,6 +382,7 @@ function App() { //fallback list of stations for the app to use
                     onDataUpdated={handleDataUpdated}
                     legendVisibility={legendVisibility}
                     onLegendVisibilityChange={setLegendVisibility}
+                    onTransferStationsChange={setTransferStations}
                     showLegend={!gameMode}
                     debugEnabled={mapDebugEnabled}
                     onDebugEnabledChange={setMapDebugEnabled}
@@ -421,6 +430,16 @@ function App() { //fallback list of stations for the app to use
             />
             Show Map Coordinates
           </label>
+          {' '} | {' '}
+          <span>Made by Joshua Gifford and Ronan Solipuram</span>
+          {' '} | {' '}
+          <a
+            href="https://github.com/Joshua-G2/goat-hacks-2026-mbta"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Github Repo
+          </a>
         </p>
       </footer>
     </div>

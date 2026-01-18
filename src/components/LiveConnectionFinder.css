@@ -105,17 +105,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
-.countdown {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #00843d;
+.time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .absolute-time {
   font-size: 0.95rem;
   color: #777;
+}
+
+.countdown-inline {
+  font-weight: 700;
+  color: #00843d;
 }
 
 .connection-details {
