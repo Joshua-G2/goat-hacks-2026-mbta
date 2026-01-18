@@ -19,7 +19,7 @@ function LocationMarker({ position }) {
   
   useEffect(() => {
     if (position) {
-      map.flyTo(position, 13);
+      map.flyTo(position, 15);
     }
   }, [position, map]);
 
@@ -28,10 +28,13 @@ function LocationMarker({ position }) {
   return (
     <Circle
       center={position}
-      radius={50}
-      pathOptions={{ color: 'blue', fillColor: 'blue', fillOpacity: 0.4 }}
+      radius={30}
+      pathOptions={{ color: '#4CAF50', fillColor: '#4CAF50', fillOpacity: 0.6 }}
     >
-      <Popup>You are here</Popup>
+      <Popup>
+        <strong>🎮 You</strong>
+        <div>Your current position</div>
+      </Popup>
     </Circle>
   );
 }
@@ -219,6 +222,9 @@ function InteractiveMap({ selectedStops }) {
       <div className="map-loading">
         <div className="loading-spinner"></div>
         <p>Loading live map and MBTA data...</p>
+        <p style={{ fontSize: '14px', marginTop: '10px', opacity: 0.8 }}>
+          Make sure location access is enabled
+        </p>
       </div>
     );
   }
@@ -227,9 +233,10 @@ function InteractiveMap({ selectedStops }) {
     <div className="interactive-map-container">
       <MapContainer
         center={userLocation || defaultCenter}
-        zoom={13}
+        zoom={15}
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
+        className="interactive-map"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -315,7 +322,7 @@ function InteractiveMap({ selectedStops }) {
       <div className="map-legend">
         <h4>🗺️ Live Map</h4>
         <div className="legend-item">
-          <div className="legend-dot" style={{ background: 'blue' }}></div>
+          <div className="legend-dot" style={{ background: '#4CAF50' }}></div>
           <span>Your Location (GPS)</span>
         </div>
         <div className="legend-item">

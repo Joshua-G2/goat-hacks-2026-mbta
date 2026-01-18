@@ -36,6 +36,15 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
+.game-map-container .leaflet-top.leaflet-left {
+  left: auto;
+  right: 0;
+}
+
+.game-map-container .leaflet-top.leaflet-right {
+  right: 0;
+}
+
 .map-placeholder {
   display: flex;
   flex-direction: column;
@@ -87,13 +96,13 @@
 .game-hud {
   position: absolute;
   top: 20px;
-  right: 20px;
-  background: rgba(0,0,0,0.85);
-  color: white;
-  padding: 15px 20px;
+  left: 20px;
+  background: rgba(255,255,255,0.95);
+  color: #333;
+  padding: 15px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 1000;
 }
 
 .hud-stats {
@@ -119,7 +128,7 @@
 .stat-value {
   font-size: 18px;
   font-weight: bold;
-  color: #ffd700;
+  color: #4CAF50;
 }
 
 /* Event Controls */
@@ -385,7 +394,7 @@
   
   .game-hud {
     top: 10px;
-    right: 10px;
+    left: 10px;
     padding: 10px 15px;
   }
   

@@ -28,8 +28,8 @@ import { subscribeToUserLocations, subscribeToEvents, reportEvent, updateUserLoc
  * See API_SETUP.md for detailed setup instructions.
  */
 function App() {
-  // Mode toggle - START IN GAME MODE
-  const [gameMode, setGameMode] = useState(true);
+  // Mode toggle - START IN TRANSIT MODE
+  const [gameMode, setGameMode] = useState(false);
   
   // Transit mode state
   const [selectedStops, setSelectedStops] = useState({
