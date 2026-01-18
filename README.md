@@ -52,32 +52,41 @@ Transform your transit experience into an adventure! Earn XP, complete quests, a
 
 ### Game Mode Features ⭐ NEW
 
-1. **XP & Leveling System**
+1. **3D POV Map (Pokemon GO Style)** 🆕
+   - First-person 3D perspective with tilted camera
+   - Real 3D buildings and terrain
+   - Device orientation support (gyroscope/compass)
+   - Smooth camera animations
+   - Toggle between 2D and 3D views
+   - Custom task markers with pulsing animations
+   - See **[MAPBOX_SETUP.md](MAPBOX_SETUP.md)** for setup
+
+2. **XP & Leveling System**
    - 12 unique titles (Newcomer → MBTA Guardian)
    - Progress bar with next level tracking
    - Visual level badge
    - Multiple ways to earn XP
 
-2. **Task & Quest System**
+3. **Task & Quest System**
    - Auto-generated tasks at MBTA stations
    - 4 task types: Explorer, Transfer Master, Route Runner, Community Helper
    - AI-powered quest generation (integration ready)
    - Quest dialog with NPC narratives
    - Audio narration support (TTS ready)
 
-3. **Achievement System**
+4. **Achievement System**
    - 7 mileage milestones
    - Achievement badges
    - Free ticket reward at 100,000 miles
    - Progress tracking
 
-4. **Social Features**
+5. **Social Features**
    - Real-time event reporting (Police, Delay, Crowded, etc.)
    - See other players on map (multiplayer ready)
    - Community event feed
    - Auto-expiring events
 
-5. **Stats & Profile**
+6. **Stats & Profile**
    - Total XP and miles traveled
    - Tasks completed counter
    - Achievement gallery
@@ -91,6 +100,7 @@ See **[QUICKSTART.md](QUICKSTART.md)** for 5-minute setup guide.
 
 - Node.js 18+ and npm
 - MBTA API key (free at https://api-v3.mbta.com/register)
+- Mapbox token (free at https://mapbox.com) - **Optional, for 3D map**
 
 ### Installation
 
@@ -103,6 +113,9 @@ cp .env.example .env
 
 # Add your MBTA API key to .env
 # VITE_MBTA_API_KEY=your_key_here
+
+# (Optional) Add Mapbox token for 3D map
+# VITE_MAPBOX_TOKEN=your_mapbox_token
 
 # Start development server
 npm run dev
@@ -117,16 +130,19 @@ Click **"Switch to Game Mode"** in the header to activate RPG features!
 ## 📚 Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
+- **[MAPBOX_SETUP.md](MAPBOX_SETUP.md)** - 3D POV map setup guide
 - **[RPG_FEATURES.md](RPG_FEATURES.md)** - Complete RPG implementation guide
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - What was built
 - **[API_SETUP.md](API_SETUP.md)** - MBTA API configuration details
-
 ## 🎮 How to Play (Game Mode)
 
 1. **Switch to Game Mode** - Click the toggle button
-2. **Complete Tasks** - Visit stations and click ✓ to earn +5 XP
-3. **Travel Miles** - Track your transit journeys for +1 XP per mile
-4. **Report Events** - Help the community by reporting delays, police, etc.
+2. **Choose Your View** - Toggle between 🗺️ 2D Map or 🏙️ 3D POV mode
+3. **Complete Tasks** - Visit stations and click ✓ to earn +5 XP
+4. **Travel Miles** - Track your transit journeys for +1 XP per mile
+5. **Report Events** - Help the community by reporting delays, police, etc.
+6. **Generate Quests** - Click "Generate New Quest" for AI narratives
+7. **Enable Compass** - (Mobile) Tap 🧭 to use device orientation, etc.
 5. **Generate Quests** - Click "Generate New Quest" for AI narratives
 6. **Level Up** - Progress through 12 unique titles
 7. **Unlock Achievements** - Reach mileage milestones

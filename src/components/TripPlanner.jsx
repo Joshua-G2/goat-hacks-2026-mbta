@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import MBTA_API from '../config/mbtaApi';
+import RouteMap from './RouteMap';
 import { 
   computeWalkMinutes, 
   calculateDistance, 
@@ -295,6 +296,40 @@ function TripPlanner() {
         </div>
       </div>
 
+      {/* Route Summary */}
+      {(originStop || destinationStop) && (
+        <div className="route-summary">
+          <h3>📍 Your Route</h3>
+          {originStop && originRoute && (
+            <div className="route-step">
+              <div className="step-icon" style={{ background: `#${originRoute.attributes.color || '4CAF50'}` }}>1</div>
+              <div className="step-details">
+                <strong>{originRoute.attributes.long_name}</strong>
+                <div className="stop-name">From: {originStop.attributes.name}</div>
+              </div>
+            </div>
+          )}
+          {transferStop && (
+            <div className="route-step">
+              <div className="step-icon transfer">🔄</div>
+              <div className="step-details">
+                <strong>Transfer</strong>
+                <div className="stop-name">At: {transferStop.attributes.name}</div>
+              </div>
+            </div>
+          )}
+          {destinationStop && destinationRoute && (
+            <div className="route-step">
+              <div className="step-icon" style={{ background: `#${destinationRoute.attributes.color || 'F44336'}` }}>2</div>
+              <div className="step-details">
+                <strong>{destinationRoute.attributes.long_name}</strong>
+                <div className="stop-name">To: {destinationStop.attributes.name}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {loading && <div className="loading">Loading predictions...</div>}
 
       {predictions && !loading && (
@@ -345,6 +380,15 @@ function TripPlanner() {
           )}
         </div>
       )}
+
+      {/* Route Visualization Map */}
+      <RouteMap
+        originStop={originStop}
+        transferStop={transferStop}
+        destinationStop={destinationStop}
+        originRoute={originRoute}
+        destinationRoute={destinationRoute}
+      />
     </div>
   );
 }

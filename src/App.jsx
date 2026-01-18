@@ -7,6 +7,7 @@ import LiveConnectionFinder from './components/LiveConnectionFinder'
 import ConfidenceIndicator from './components/ConfidenceIndicator'
 import TripPlanner from './components/TripPlanner'
 import GameMap from './components/GameMap'
+import EnhancedGameMap from './components/EnhancedGameMap'
 import UserProfile from './components/UserProfile'
 import QuestDialog from './components/QuestDialog'
 import { generateQuest } from './services/questService'
@@ -28,6 +29,8 @@ import { subscribeToUserLocations, subscribeToEvents, reportEvent, updateUserLoc
  * See API_SETUP.md for detailed setup instructions.
  */
 function App() {
+  console.log('App component rendering');
+  
   // Mode toggle - START IN GAME MODE
   const [gameMode, setGameMode] = useState(true);
   
@@ -334,17 +337,11 @@ function App() {
 
             {/* Right Column: Game Map */}
             <main className="app-main">
-              <GameMap 
-                tasks={tasks}
-                xp={xp}
-                miles={miles}
+              <EnhancedGameMap 
                 onCompleteTask={handleCompleteTask}
                 onTravel={handleTravel}
-                userPosition={userPosition}
-                otherUsers={otherUsers}
                 events={events}
                 onReportEvent={handleReportEvent}
-                stations={stations}
               />
             </main>
           </>

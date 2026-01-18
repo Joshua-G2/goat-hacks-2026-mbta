@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import POVMap from './POVMap';
 import { 
   EVENT_TYPES,
   filterActiveEvents 
@@ -61,6 +62,7 @@ function GameMap({
   const [userLocation, setUserLocation] = useState(null);
   const [showEventMenu, setShowEventMenu] = useState(false);
   const [activeEvents, setActiveEvents] = useState([]);
+  const [isPOVMode, setIsPOVMode] = useState(true); // Default to 3D POV
 
   // Boston default center - memoized to prevent dependency changes
   const defaultCenter = useMemo(() => [42.3601, -71.0589], []);
@@ -168,13 +170,42 @@ function GameMap({
 
   return (
     <div className="game-map-container">
-      {/* Real Leaflet Map with Game Overlays */}
-      <MapContainer
-        center={userLocation || defaultCenter}
-        zoom={15}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={true}
-      >
+      {/* View Mode Toggle */}
+      <div className="view-toggle">
+        <button 
+          className={`toggle-btn ${isPOVMode ? 'active' : ''}`}
+          onClick={() => setIsPOVMode(true)}
+          title="3D POV Mode (Pokemon GO style)"
+        >
+          🏙️ 3D POV
+        </button>
+        <button 
+          className={`toggle-btn ${!isPOVMode ? 'active' : ''}`}
+          onClick={() => setIsPOVMode(false)}
+          title="2D Map Mode"
+        >
+          🗺️ 2D Map
+        </button>
+      </div>
+
+      {isPOVMode ? (
+        /* 3D POV Map - Pokemon GO Style */
+        <POVMap
+          tasks={tasks}
+          userPosition={userLocation || defaultCenter}
+          otherUsers={otherUsers}
+          events={activeEvents}
+          onTaskClick={handleTaskClick}
+          onEventClick={(eventId) => console.log('Event clicked:', eventId)}
+        />
+      ) : (
+        /* 2D Map - Traditional Leaflet */
+        <MapContainer
+          center={userLocation || defaultCenter}
+          zoom={15}
+          style={{ height: '100%', width: '100%' }}
+          zoomControl={true}
+        >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -249,7 +280,8 @@ function GameMap({
             </Marker>
           );
         })}
-      </MapContainer>
+        </MapContainer>
+      )}
 
       {/* HUD Overlay */}
       <div className="game-hud">

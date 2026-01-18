@@ -164,38 +164,3 @@ function StationSelector({ selectedStops, onStopChange }) {
 }
 
 export default StationSelector;
-
-      <div className="selector-group">
-        <label htmlFor="destination">
-          <span className="label-icon">🎯</span>
-          Destination Station
-        </label>
-        <select 
-          id="destination"
-          className="station-select"
-          value={selectedStops?.destination || ''}
-          onChange={(e) => handleStationSelect('destination', e.target.value)}
-        >
-          <option value="">-- Select destination --</option>
-          {/* TODO: Map actual station data */}
-          {placeholderStations.map(station => (
-            <option key={`dest-${station}`} value={station}>
-              {station}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="action-buttons">
-        <button className="btn-reset" onClick={() => console.log('Reset selections')}>
-          Clear All
-        </button>
-        <button className="btn-find" onClick={() => console.log('Find transfers')}>
-          Find Transfers
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default StationSelector;
