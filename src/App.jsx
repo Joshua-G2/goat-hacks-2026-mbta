@@ -27,6 +27,8 @@ import { subscribeToUserLocations, subscribeToEvents, reportEvent } from './serv
  * See API_SETUP.md for detailed setup instructions.
  */
 function App() { //fallback list of stations for the app to use
+  console.log('🚀 App component rendering...');
+  
   const IMPORTANT_STATIONS = [
     { id: 'place-alfcl', name: 'Alewife', latitude: 42.395428, longitude: -71.142483 },
     { id: 'place-brntn', name: 'Braintree', latitude: 42.207854, longitude: -71.001138 },
@@ -41,8 +43,8 @@ function App() { //fallback list of stations for the app to use
     { id: 'place-gover', name: 'Government Center', latitude: 42.359705, longitude: -71.059215 }
   ];
 
-  // Mode toggle - START IN TRANSIT MODE
-  const [gameMode, setGameMode] = useState(false);
+  // Mode toggle - START IN GAME MODE (for blockchain testing)
+  const [gameMode, setGameMode] = useState(true);
   
   // Transit mode state
   const [selectedOrigin, setSelectedOrigin] = useState(null);

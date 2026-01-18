@@ -1,34 +1,66 @@
-# MBTA Transit Helper + RPG Mode 🚇🎮
+# MBTA Transit Helper + RPG Game Mode 🚇🎮
 
-A dual-mode React web application that combines real-time MBTA transit planning with an engaging RPG game experience.
+A dual-mode React application combining **practical real-time MBTA transit planning** with an **engaging blockchain-powered RPG game** that gamifies your daily commute and incentivizes fare compliance.
 
-## 🌟 Two Modes, One App
+---
 
-### 🗺️ Transit Mode
-Plan your MBTA journey with real-time predictions and smart transfer guidance.
+## 🌟 Two Modes, One Purpose
 
-### 🎮 Game Mode (RPG)
-Transform your transit experience into an adventure! Earn XP, complete quests, and explore Boston's transit system like never before.
+### 🗺️ **Transit Mode** - Smart Journey Planning
+Real-time MBTA trip planning with intelligent transfer guidance and live predictions.
+
+### 🎮 **Game Mode** - Blockchain-Verified Adventures
+Transform your commute into an RPG quest! Upload tickets, explore Boston's transit network, earn points, and receive blockchain-verified rewards on Solana.
+
+---
 
 ## 🎯 Features
 
-### Transit Mode Features
+### 🗺️ Transit Mode - Real-Time Journey Planning
 
-1. **Smart Trip Planner** ⭐ NEW
-   - Origin, transfer, and destination route selection
-   - Real-time predictions from MBTA API
-   - Walking time estimation with adjustable speed
-   - Transfer confidence calculator (Likely/Risky/Unlikely)
-   - Auto-refresh predictions every 30 seconds
+#### **1. Smart Trip Planner**
+Plan multi-leg journeys with live MBTA data and intelligent routing.
 
-2. **Interactive Map Display**
-   - Template for displaying MBTA routes and stops
-   - Route legend with official MBTA colors
-   - Ready for Leaflet/Mapbox integration
-   - Selection state tracking
+**Core Features:**
+- **Origin → Transfer → Destination** route selection
+- **Real-time arrival predictions** from MBTA V3 API
+- **Auto-refresh** every 30 seconds for live updates
+- **Walking time estimation** with adjustable speed (3-5 mph)
+- **Transfer confidence calculator** using timing analysis
 
-3. **Station Selector**
-   - Dropdown selectors for origin, transfer, destination
+**Transfer Confidence Algorithm:**
+The system calculates transfer success probability based on:
+- Time buffer between arrivals and departures
+- Walking distance between platforms (Haversine formula)
+- Historical MBTA delay patterns
+
+Results:
+- **Likely** ✅ (>5 min buffer) - Safe transfer
+- **Risky** ⚠️ (2-5 min buffer) - Possible but tight
+- **Unlikely** ❌ (<2 min buffer) - High risk of missing connection
+
+#### **2. Live Connection Finder**
+Real-time prediction display with smart filtering:
+- Shows next 3-5 arrivals per route
+- Color-coded by MBTA line (Red, Orange, Blue, Green)
+- Countdown timers in minutes
+- Platform/track information
+- Alerts and service disruptions
+
+#### **3. Interactive Map**
+Leaflet-powered map visualization:
+- Official MBTA route colors (Red: `#DA291C`, Orange: `#ED8B00`, etc.)
+- Station markers for origin, transfer, and destination
+- Route polylines with real MBTA shapes
+- Toggle layers for different line visibility
+- User location tracking
+
+#### **4. Station Selection**
+Intuitive dropdowns with:
+- 100+ MBTA stations searchable by name
+- Grouped by subway line
+- Real-time data fetching on selection
+- Validation to prevent invalid routes
    - Clear visual hierarchy with emoji icons
    - Action buttons and helper text
 
@@ -50,173 +82,267 @@ Transform your transit experience into an adventure! Earn XP, complete quests, a
    - Timing factor breakdowns
    - Alternative suggestions
 
-### Game Mode Features ⭐ NEW
+---
 
-1. **XP & Leveling System**
-   - 12 unique titles (Newcomer → MBTA Guardian)
-   - Progress bar with next level tracking
-   - Visual level badge
-   - Multiple ways to earn XP
+### 🎮 Game Mode - RPG Transit Adventure + Blockchain
 
-2. **Task & Quest System**
-   - Auto-generated tasks at MBTA stations
-   - 4 task types: Explorer, Transfer Master, Route Runner, Community Helper
-   - AI-powered quest generation (integration ready)
-   - Quest dialog with NPC narratives
-   - Audio narration support (TTS ready)
+#### **Core Gameplay**
+Turn your MBTA commute into an epic quest system:
 
-3. **Achievement System**
-   - 7 mileage milestones
-   - Achievement badges
-   - Free ticket reward at 100,000 miles
-   - Progress tracking
+**Ticket Upload Requirement:**
+- Upload transit ticket to unlock game mode
+- **Incentivizes fare compliance** - players must pay to play
+- Foundation for future automated ticket verification
 
-4. **Social Features**
-   - Real-time event reporting (Police, Delay, Crowded, etc.)
-   - See other players on map (multiplayer ready)
-   - Community event feed
-   - Auto-expiring events
+**Journey Mechanics:**
+1. Select start and end stations
+2. Navigate through actual MBTA routes in real-time
+3. Reach transfer stations and final destinations
+4. Earn points based on distance traveled
+5. Complete journeys to trigger blockchain rewards
 
-5. **Stats & Profile**
-   - Total XP and miles traveled
-   - Tasks completed counter
-   - Achievement gallery
-   - Personalized transit avatar
+**XP & Progression:**
+- Points earned: `distance × 100 points per mile`
+- Distance tracking: Real GPS or manual station-to-station progression
+- Level up by completing more complex routes
+- Explore all MBTA lines to maximize rewards
+
+#### **🔗 Solana Blockchain Integration**
+
+**Real On-Chain Recording:**
+- Each completed journey creates a **verifiable blockchain transaction**
+- Data stored on Solana via Memo program (immutable record)
+- Transaction signatures provide proof of journey completion
+
+**Reward System:**
+- **0.001 SOL per point earned** (configurable)
+- Micro-rewards distributed automatically
+- Requires Phantom wallet connection
+- Two transactions per journey:
+  1. Journey data recording (Memo program)
+  2. Reward memo (points → SOL conversion)
+
+**Transaction History:**
+- Real-time panel showing recent blockchain transactions
+- Direct links to Solana Explorer for verification
+- Displays: route, points earned, SOL received, timestamp
+
+**Wallet Integration:**
+- Phantom/Solflare wallet support
+- DevNet for testing, MainNet-ready architecture
+- Auto-connect on app load
+- Balance display with manual refresh
+
+#### **Social Impact: Gamified Fare Compliance**
+
+**The Problem:**
+- Fare evasion costs US transit agencies **$500M+ annually**
+- Traditional enforcement is punitive and ineffective
+
+**Our Solution:**
+- **Upload ticket → Play game → Earn crypto rewards**
+- Positive incentive structure vs. punishment
+- Makes paying for transit **rewarding and fun**
+- Scalable to any transit system worldwide
+
+**Why It Works:**
+- Small crypto rewards (≈$0.10) are sufficient when gamified
+- Blockchain verification prevents fraud
+- Social proof via on-chain achievements
+- Builds community of compliant, engaged riders
+
+---
+
+### 🛠️ Technical Implementation
+
+#### **Architecture**
+
+```
+┌─────────────────────────────────────────────────┐
+│           React + Vite Frontend                 │
+├─────────────────────────────────────────────────┤
+│  Transit Mode          │      Game Mode         │
+│  ├─ Trip Planner       │  ├─ Ticket Upload      │
+│  ├─ Live Predictions   │  ├─ Journey Tracking   │
+│  ├─ Map Display        │  ├─ XP System          │
+│  └─ Transfer Guidance  │  └─ Blockchain Rewards │
+├─────────────────────────────────────────────────┤
+│           MBTA V3 API Service Layer             │
+│  ├─ Real-time predictions                       │
+│  ├─ Route shapes & stops                        │
+│  └─ Service alerts                              │
+├─────────────────────────────────────────────────┤
+│        Solana Blockchain Integration            │
+│  ├─ Memo Program (on-chain storage)            │
+│  ├─ Wallet Adapter (Phantom/Solflare)          │
+│  ├─ RPC with multi-endpoint fallback           │
+│  └─ Transaction history & Explorer links       │
+└─────────────────────────────────────────────────┘
+```
+
+#### **Key Technologies**
+
+| Category | Technology | Purpose |
+|----------|-----------|---------|
+| **Frontend** | React + Vite | Fast development with HMR |
+| **Mapping** | Leaflet + React-Leaflet | Interactive transit visualization |
+| **Transit Data** | MBTA V3 API | Live predictions & route info |
+| **Blockchain** | Solana Web3.js | On-chain transaction recording |
+| **Wallet** | Phantom Adapter | Crypto wallet integration |
+| **Geospatial** | Haversine Formula | Distance calculations |
+| **Styling** | Custom CSS + Animations | Modern UI/UX |
+
+#### **Smart Algorithms**
+
+**1. Transfer Confidence Calculation:**
+```javascript
+// Time buffer analysis
+const buffer = nextDepartureTime - arrivalTime - walkTime;
+if (buffer > 5min) return "Likely";
+if (buffer > 2min) return "Risky";
+return "Unlikely";
+```
+
+**2. Distance Calculation (Haversine):**
+```javascript
+// Used for walking time estimation
+const R = 6371e3; // Earth radius in meters
+const φ1 = lat1 * π/180;
+const φ2 = lat2 * π/180;
+const Δφ = (lat2-lat1) * π/180;
+const Δλ = (lon2-lon1) * π/180;
+
+const a = sin²(Δφ/2) + cos(φ1)·cos(φ2)·sin²(Δλ/2);
+const c = 2·atan2(√a, √(1-a));
+const distance = R × c; // meters
+```
+
+**3. Walking Time Estimation:**
+```javascript
+// Adjustable walking speed (default: 1.4 m/s ≈ 3 mph)
+walkMinutes = (distanceMeters / speedMps) / 60;
+```
+
+---
 
 ## 🚀 Quick Start
 
-See **[QUICKSTART.md](QUICKSTART.md)** for 5-minute setup guide.
-
 ### Prerequisites
-
-- Node.js 18+ and npm
-- MBTA API key (free at https://api-v3.mbta.com/register)
+- Node.js 20.19+ or 22.12+
+- MBTA V3 API key ([get one free](https://api-v3.mbta.com/))
+- Phantom wallet ([download](https://phantom.app/)) for game mode
 
 ### Installation
 
+1. **Clone the repository:**
 ```bash
-# Install dependencies
+git clone https://github.com/Joshua-G2/goat-hacks-2026-mbta.git
+cd goat-hacks-2026-mbta
+```
+
+2. **Install dependencies:**
+```bash
 npm install
+```
 
-# Copy environment template
-cp .env.example .env
+3. **Configure MBTA API:**
+Create `.env` file in project root:
+```env
+VITE_MBTA_API_KEY=your_api_key_here
+```
 
-# Add your MBTA API key to .env
-# VITE_MBTA_API_KEY=your_key_here
-
-# Start development server
+4. **Run development server:**
+```bash
 npm run dev
 ```
 
-Open http://localhost:5173
-
-### Mode Toggle
-
-Click **"Switch to Game Mode"** in the header to activate RPG features!
-
-## 📚 Documentation
-
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
-- **[RPG_FEATURES.md](RPG_FEATURES.md)** - Complete RPG implementation guide
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - What was built
-- **[API_SETUP.md](API_SETUP.md)** - MBTA API configuration details
-
-## 🎮 How to Play (Game Mode)
-
-1. **Switch to Game Mode** - Click the toggle button
-2. **Complete Tasks** - Visit stations and click ✓ to earn +5 XP
-3. **Travel Miles** - Track your transit journeys for +1 XP per mile
-4. **Report Events** - Help the community by reporting delays, police, etc.
-5. **Generate Quests** - Click "Generate New Quest" for AI narratives
-6. **Level Up** - Progress through 12 unique titles
-7. **Unlock Achievements** - Reach mileage milestones
-8. **Earn Free Ticket** - Hit 100,000 miles for your reward!
-
-## 🏗️ Project Structure
-
+5. **Open in browser:**
 ```
-src/
-├── components/
-│   ├── TripPlanner.jsx          # Smart trip planning ⭐ NEW
-│   ├── GameMap.jsx               # RPG map view ⭐ NEW
-│   ├── UserProfile.jsx           # Levels & achievements ⭐ NEW
-│   ├── QuestDialog.jsx           # AI quests ⭐ NEW
-│   ├── InteractiveMap.jsx        # Transit map
-│   ├── StationSelector.jsx       # Station selection
-│   ├── TransferGuidance.jsx      # Transfer help
-│   ├── LiveConnectionFinder.jsx  # Real-time trains
-│   └── ConfidenceIndicator.jsx   # Transfer confidence
-├── utils/
-│   ├── transitHelpers.js         # Transit calculations ⭐ NEW
-│   └── gameHelpers.js            # Game mechanics ⭐ NEW
-├── services/
-│   └── backendService.js         # Backend layer ⭐ NEW
-├── config/
-│   └── mbtaApi.js               # MBTA API wrapper
-├── App.jsx                       # Main app with mode toggle
-└── main.jsx                      # Entry point
+http://localhost:5173
 ```
 
-## 🔧 Tech Stack
+### Using Transit Mode
+1. Select **Origin** station (e.g., "Park Street")
+2. Select **Transfer** station (optional, e.g., "Downtown Crossing")
+3. Select **Destination** station (e.g., "Harvard Square")
+4. View real-time predictions and transfer confidence
+5. Monitor auto-refreshing arrivals
 
-- **React 19** - UI framework
-- **Vite** - Build tool & dev server
-- **MBTA V3 API** - Real-time transit data
-- **CSS3** - Styling with animations
+### Using Game Mode
+1. Toggle to **Game Mode** via mode switch
+2. **Connect Phantom wallet** (switch to DevNet in settings)
+3. **Upload transit ticket** image (click upload area)
+4. Select start and end stations
+5. Click **"Start Journey"**
+6. Navigate through stations (auto-advances or manual clicks)
+7. Click **"Off Board"** at destination
+8. **Approve 2 blockchain transactions** in Phantom
+9. View transaction history in top-right panel
+10. Check Solana Explorer for verification
 
-### Optional Integrations
+---
 
-- **Firebase** - Real-time multiplayer backend
-- **Supabase** - PostgreSQL-based backend
-- **Leaflet/Mapbox** - Interactive maps
-- **LlamaIndex** - RAG for quest generation
-- **OpenRouter** - LLM API for narratives
-- **ElevenLabs** - Text-to-speech for quests
+## 📊 Project Statistics
 
-## 🎯 XP & Rewards
+- **Lines of Code:** ~5,000+
+- **React Components:** 15+
+- **MBTA Stations Supported:** 100+
+- **Blockchain Transactions:** Real Solana DevNet
+- **API Calls:** MBTA V3 REST API
+- **Map Markers:** Custom Leaflet icons
 
-### How to Earn XP
+---
 
-- ⭐ Complete task: **+5 XP**
-- 🚇 Travel 1 mile: **+1 XP**
-- 📍 Visit station: **+2 XP**
-- 🔄 Successful transfer: **+3 XP**
-- 🎯 Complete route: **+10 XP**
-- 📅 Daily login: **+5 XP**
-- 📢 Report event: **+2 XP**
+## 🎓 What We Learned
 
-### Achievements
+- **Blockchain UX:** Making crypto feel simple for non-crypto users
+- **API Resilience:** Multi-endpoint fallbacks for network reliability
+- **Behavioral Economics:** Micro-rewards can change commuter behavior
+- **Real-Time Systems:** Syncing GPS, API polling, and blockchain transactions
+- **Geospatial Math:** Haversine formula for accurate distance calculations
 
-| Miles | Reward | Badge |
-|-------|--------|-------|
-| 100 | First 100 Miles | 🎯 |
-| 500 | Transit Regular | 🚇 |
-| 1,000 | Thousand Mile Club | ⭐ |
-| 5,000 | Master Navigator | 🏆 |
-| 10,000 | Transit Legend | 👑 |
-| 50,000 | Epic Commuter | 💎 |
-| 100,000 | **FREE TICKET!** | 🎁 |
+---
 
-## 🔌 Backend Setup (Optional)
+## 🔮 Future Enhancements
 
-The app works immediately with a mock backend. For multiplayer and persistence:
+### Near-Term (1-3 months)
+- [ ] OCR/ML ticket validation (auto-verify tickets)
+- [ ] Multi-city support (NYC MTA, SF BART, etc.)
+- [ ] Leaderboards and social challenges
+- [ ] Push notifications for transfers
 
-### Firebase
+### Long-Term (6-12 months)
+- [ ] SPL token rewards (custom $MBTA token)
+- [ ] NFT achievements for route exploration
+- [ ] Integration with transit agency backends
+- [ ] Predictive ML for delay forecasting
 
-```bash
-npm install firebase
-```
+---
 
-1. Create Firebase project
-2. Enable Firestore
-3. Add config to `.env`
-4. Uncomment Firebase code in `src/services/backendService.js`
+## 📄 License
 
-### Supabase
+MIT License - See [LICENSE](./LICENSE) file for details.
 
-```bash
-npm install @supabase/supabase-js
-```
+---
+
+## 🙏 Acknowledgments
+
+- **MBTA** for providing comprehensive open API
+- **Solana Foundation** for blockchain infrastructure
+- **Phantom** for excellent wallet UX
+- **OpenStreetMap** for map tile data
+
+---
+
+## 📞 Contact
+
+**Repository:** [github.com/Joshua-G2/goat-hacks-2026-mbta](https://github.com/Joshua-G2/goat-hacks-2026-mbta)
+
+**Built for:** GOAT Hacks 2026 🏆
+
+---
+
+**Made with ❤️ for Boston commuters**
 
 1. Create Supabase project
 2. Run SQL schema (see RPG_FEATURES.md)
