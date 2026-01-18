@@ -255,7 +255,6 @@ function App() { //fallback list of stations for the app to use
       clearTimeout(suppressShakeTimeoutRef.current);
     }
     setGameMode(prev => !prev);
-    setShowDecisionEngine(false); // Hide decision engine when switching modes
     suppressShakeTimeoutRef.current = setTimeout(() => {
       setSuppressShake(false);
     }, 400);

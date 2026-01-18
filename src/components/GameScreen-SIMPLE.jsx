@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, Polyline, Pane, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useGPSTracking } from '../hooks/useGPSTracking';
@@ -79,10 +79,12 @@ const createPlayerIcon = () => {
 // Center map on position
 function LocationMarker({ position }) {
   const map = useMap();
+  const hasCenteredRef = useRef(false);
   
   useEffect(() => {
-    if (position) {
+    if (position && !hasCenteredRef.current) {
       map.flyTo(position, 15, { duration: 1 });
+      hasCenteredRef.current = true;
     }
   }, [position, map]);
 
@@ -218,8 +220,20 @@ function GameScreen() {
     setGameWon(false);
   };
 
+  const normalizePosition = (value) => {
+    if (!value) return null;
+    if (typeof value.lat === 'number' && typeof value.lng === 'number') {
+      return { lat: value.lat, lng: value.lng };
+    }
+    if (typeof value.latitude === 'number' && typeof value.longitude === 'number') {
+      return { lat: value.latitude, lng: value.longitude };
+    }
+    return null;
+  };
+
+  const normalizedPosition = normalizePosition(position);
   const defaultCenter = [42.3601, -71.0589];
-  const mapCenter = position ? [position.lat, position.lng] : defaultCenter;
+  const mapCenter = normalizedPosition ? [normalizedPosition.lat, normalizedPosition.lng] : defaultCenter;
 
   return (
     <div className="game-screen-simple">
@@ -261,7 +275,7 @@ function GameScreen() {
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
           
-          <LocationMarker position={position} />
+          <LocationMarker position={normalizedPosition} />
 
           {/* Route lines - ALWAYS VISIBLE */}
           <Pane name="routes" style={{ zIndex: 400 }}>
@@ -280,23 +294,30 @@ function GameScreen() {
 
           {/* Stations */}
           <Pane name="stations" style={{ zIndex: 450 }}>
-            {stops.map((stop) => (
-              <Circle
-                key={stop.id}
-                center={[stop.attributes.latitude, stop.attributes.longitude]}
-                radius={15}
-                pathOptions={{
-                  color: '#fff',
-                  weight: 2,
-                  fillColor: '#334155',
-                  fillOpacity: 1
-                }}
-              />
-            ))}
+            {stops.map((stop) => {
+              const lat = stop?.attributes?.latitude;
+              const lng = stop?.attributes?.longitude;
+              if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+              return (
+                <Circle
+                  key={stop.id}
+                  center={[lat, lng]}
+                  radius={15}
+                  pathOptions={{
+                    color: '#fff',
+                    weight: 2,
+                    fillColor: '#334155',
+                    fillOpacity: 1
+                  }}
+                />
+              );
+            })}
           </Pane>
 
           {/* Destination marker */}
-          {destination && (
+          {destination &&
+            typeof destination?.attributes?.latitude === 'number' &&
+            typeof destination?.attributes?.longitude === 'number' && (
             <Marker
               position={[destination.attributes.latitude, destination.attributes.longitude]}
               icon={L.divIcon({
@@ -309,9 +330,9 @@ function GameScreen() {
           )}
 
           {/* Player marker - BIG */}
-          {position && (
+          {normalizedPosition && (
             <Marker
-              position={[position.lat, position.lng]}
+              position={[normalizedPosition.lat, normalizedPosition.lng]}
               icon={createPlayerIcon()}
               zIndexOffset={1000}
             />

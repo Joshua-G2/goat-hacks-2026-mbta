@@ -125,7 +125,7 @@ function InteractiveMap({
   const [routes, setRoutes] = useState([]);
   const [stops, setStops] = useState([]);
   const [stopMarkers, setStopMarkers] = useState([]);
-  const [routeShapes, setRouteShapes] = useState({});
+  const [routeShapes, setRouteShapes] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [vehicleRouteTypes, setVehicleRouteTypes] = useState({});
   const [routeColors, setRouteColors] = useState({});
@@ -257,25 +257,36 @@ function InteractiveMap({
   // Load route shapes when routes change
   useEffect(() => {
     const loadRouteShapes = async () => {
-      const shapes = {};
-      
-      for (const route of routes.slice(0, 5)) { // Load first 5 routes to avoid rate limits
-        try {
-          const shapeData = await MBTA_API.getShapes(route.id);
-          if (shapeData.data && shapeData.data.length > 0) {
-            const coordinates = shapeData.data[0].attributes.polyline
-              ? decodePolyline(shapeData.data[0].attributes.polyline)
-              : [];
-            shapes[route.id] = {
-              coordinates,
-              color: `#${route.attributes.color}` || '#000000'
-            };
+      const shapes = [];
+      await Promise.all(
+        routes.map(async (route) => {
+          try {
+            const shapeData = await MBTA_API.getShapes(route.id);
+            if (shapeData.data && shapeData.data.length > 0) {
+              shapeData.data.forEach((shape, index) => {
+                const coordinates = shape.attributes.polyline
+                  ? decodePolyline(shape.attributes.polyline)
+                  : [];
+                if (coordinates.length > 0) {
+                  const shapeColor = route.id?.toLowerCase().includes('mattapan')
+                    ? '#8B1E1E'
+                    : `#${route.attributes.color}` || '#000000';
+                  shapes.push({
+                    id: `${route.id}-${index}`,
+                    routeId: route.id,
+                    group: getRouteGroup(route.id),
+                    coordinates,
+                    color: shapeColor,
+                  });
+                }
+              });
+            }
+          } catch (error) {
+            console.error(`Error loading shape for route ${route.id}:`, error);
           }
-        } catch (error) {
-          console.error(`Error loading shape for route ${route.id}:`, error);
-        }
-      }
-      
+        })
+      );
+
       setRouteShapes(shapes);
       onDataUpdated();
     };
@@ -283,7 +294,7 @@ function InteractiveMap({
     if (routes.length > 0) {
       loadRouteShapes();
     }
-  }, [routes]);
+  }, [routes, routeTypes]);
 
   // Load live vehicle positions every 10 seconds
   useEffect(() => {
@@ -458,9 +469,20 @@ function InteractiveMap({
     return null;
   };
 
+  const brightenHexColor = (value, amount = 0.2) => {
+    const normalized = normalizeHexColor(value);
+    if (!normalized) return null;
+    const hex = normalized.slice(1);
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    const mix = (channel) => Math.min(255, Math.round(channel + (255 - channel) * amount));
+    return `#${[mix(r), mix(g), mix(b)].map((n) => n.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+  };
+
   const getFallbackLineColor = (routeId) => {
     const id = routeId?.toLowerCase() || '';
-    if (id.includes('mattapan')) return '#FFD200';
+    if (id.includes('mattapan')) return '#8B1E1E';
     if (id.startsWith('red')) return '#DA291C';
     if (id.startsWith('blue')) return '#003DA5';
     if (id.startsWith('orange')) return '#FF8C00';
@@ -482,18 +504,18 @@ function InteractiveMap({
     if (routeIds.length === 0) return '#2196F3';
 
     const mattapanRoute = routeIds.find((routeId) => routeId?.toLowerCase().includes('mattapan'));
-    if (mattapanRoute) return '#FFD200';
+    if (mattapanRoute) return '#8B1E1E';
 
     const commuterRoute = routeIds.find((routeId) => routeTypes[routeId] === 2);
     if (commuterRoute) return '#7E3FF2';
 
     const apiColor = routeIds.map((routeId) => normalizeHexColor(routeColors[routeId])).find(Boolean);
-    if (apiColor) return apiColor;
+    if (apiColor) return brightenHexColor(apiColor, 0.18);
 
     const typeFallback = routeIds.map((routeId) => getRouteTypeFallbackColor(routeId)).find(Boolean);
-    if (typeFallback) return typeFallback;
+    if (typeFallback) return brightenHexColor(typeFallback, 0.18);
 
-    return getFallbackLineColor(routeIds[0]);
+    return brightenHexColor(getFallbackLineColor(routeIds[0]), 0.18) || '#2196F3';
   };
 
   const getStationGroups = (stop) => {
@@ -519,6 +541,17 @@ function InteractiveMap({
     return Array.from(groups);
   };
 
+  const getRouteGroup = (routeId) => {
+    const id = routeId?.toLowerCase() || '';
+    if (id.includes('mattapan')) return 'mattapan';
+    if (routeTypes[routeId] === 2) return 'commuter';
+    if (id.startsWith('red')) return 'red';
+    if (id.startsWith('orange')) return 'orange';
+    if (id.startsWith('blue')) return 'blue';
+    if (id.startsWith('green')) return 'green';
+    return null;
+  };
+
   const getStationGroupColors = (groups) => {
     const colorByGroup = {
       commuter: '#7E3FF2',
@@ -526,17 +559,25 @@ function InteractiveMap({
       orange: '#FF8C00',
       blue: '#003DA5',
       green: '#00843D',
-      mattapan: '#FFD200',
+      mattapan: '#8B1E1E',
     };
     const priority = ['red', 'orange', 'blue', 'green', 'mattapan', 'commuter'];
     const ordered = [
       ...priority.filter((group) => groups.includes(group)),
       ...groups.filter((group) => !priority.includes(group)),
     ];
-    return ordered.map((group) => colorByGroup[group]).filter(Boolean);
+    return ordered
+      .map((group) => {
+        const base = colorByGroup[group];
+        if (!base) return null;
+        if (group === 'mattapan') return base;
+        return brightenHexColor(base, 0.18) || base;
+      })
+      .filter(Boolean);
   };
 
   const getRouteColor = (routeId) => {
+    if (routeId?.toLowerCase().includes('mattapan')) return '#8B1E1E';
     const matched = routes.find((route) => route.id === routeId);
     return matched?.attributes?.color ? `#${matched.attributes.color}` : '#1F2937';
   };
@@ -683,12 +724,15 @@ function InteractiveMap({
           map.on('zoomstart', () => setAutoFitEnabled(false));
         }}
       >
-        <Pane name="selectedStops" style={{ zIndex: 650 }} />
+        <Pane name="routeLines" style={{ zIndex: 400 }} />
         <Pane name="routeMotion" style={{ zIndex: 620 }} />
+        <Pane name="stations" style={{ zIndex: 640 }} />
+        <Pane name="selectedStops" style={{ zIndex: 650 }} />
+        <Pane name="vehicles" style={{ zIndex: 680 }} />
         <Pane name="userLocation" style={{ zIndex: 700 }} />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
         {/* User's live location */}
@@ -717,13 +761,20 @@ function InteractiveMap({
         />
 
         {/* MBTA Route Lines */}
-        {Object.entries(routeShapes).map(([routeId, shape]) => (
-          <Polyline
-            key={routeId}
-            positions={shape.coordinates}
-            pathOptions={{ color: shape.color, weight: 4, opacity: 0.7 }}
-          />
-        ))}
+        {routeShapes
+          .filter((shape) => {
+            if (!activeLegendVisibility.stations) return false;
+            if (!shape.group) return true;
+            return activeLegendVisibility.stationLines?.[shape.group] !== false;
+          })
+          .map((shape) => (
+            <Polyline
+              key={shape.id}
+              pane="routeLines"
+              positions={shape.coordinates}
+              pathOptions={{ color: shape.color, weight: 4, opacity: 0.7 }}
+            />
+          ))}
 
         {/* MBTA Stations */}
         {activeLegendVisibility.stations && stopMarkers.map((stop) => {
@@ -789,13 +840,14 @@ function InteractiveMap({
           );
 
           const dualColors = getStationGroupColors(stationGroups);
-          const isDual = dualColors.length >= 2;
+          const isDual = dualColors.length >= 2 && !isTransfer;
 
           return (
             <React.Fragment key={stop.id}>
               {isDual ? (
                 <Marker
                   position={position}
+                  pane="stations"
                   icon={createDualStopIcon(dualColors[0], dualColors[1], isSelected)}
                 >
                   {popup}
@@ -803,11 +855,12 @@ function InteractiveMap({
               ) : (
                 <CircleMarker
                   center={position}
-                  radius={isSelected ? 8 : 5}
+                  pane="stations"
+                  radius={isTransfer ? 10 : isSelected ? 8 : 5}
                   pathOptions={{
                     color: '#ffffff',
                     weight: isSelected ? 2.5 : 1.5,
-                    fillColor: lineColor,
+                    fillColor: isTransfer ? '#9E9E9E' : lineColor,
                     fillOpacity: 0.9,
                   }}
                 >
@@ -890,6 +943,7 @@ function InteractiveMap({
             <Marker
               key={vehicle.id}
               position={position}
+              pane="vehicles"
               icon={createVehicleIcon(iconType)}
             >
               <Popup>
@@ -992,7 +1046,7 @@ export function LiveMapLegend({
           }
         />
         <div className="legend-dot" style={{ background: '#000000' }}></div>
-        <span>Start / Destination</span>
+        <span>Origin / Destination</span>
       </label>
       <label className="legend-item">
         <input
@@ -1003,7 +1057,7 @@ export function LiveMapLegend({
             onLegendVisibilityChange((prev) => ({ ...prev, transfer: event.target.checked }))
           }
         />
-        <div className="legend-dot" style={{ background: '#9C27B0' }}></div>
+        <div className="legend-dot" style={{ background: '#9E9E9E' }}></div>
         <span>Transfer</span>
       </label>
       <div className="legend-item legend-item-stations">
