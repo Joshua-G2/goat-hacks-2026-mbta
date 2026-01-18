@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, Pane, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -15,14 +15,6 @@ L.Icon.Default.mergeOptions({
 
 // Component to center map on user location
 function LocationMarker({ position }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (position) {
-      map.flyTo(position, 15);
-    }
-  }, [position, map]);
-
   if (!position) return null;
 
   return (
@@ -31,7 +23,7 @@ function LocationMarker({ position }) {
       radius={9}
       pane="userLocation"
       className="user-location-marker"
-      pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#061a3a', fillOpacity: 0.95 }}
+      pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#2563eb', fillOpacity: 0.95 }}
     >
       <Popup>
         <strong>🎮 You</strong>
@@ -41,15 +33,15 @@ function LocationMarker({ position }) {
   );
 }
 
-function FitBounds({ origin, destination }) {
+function FitBounds({ origin, destination, allowAutoFit }) {
   const map = useMap();
 
   useEffect(() => {
-    if (origin && destination) {
+    if (allowAutoFit && origin && destination) {
       const bounds = L.latLngBounds([origin, destination]);
       map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
     }
-  }, [origin, destination, map]);
+  }, [origin, destination, map, allowAutoFit]);
 
   return null;
 }
@@ -69,6 +61,54 @@ function DebugMouseTracker({ enabled, onMove, onLeave }) {
   return null;
 }
 
+function TripControlStack({ origin, destination, userLocation, onReset }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    const control = L.control({ position: 'topleft' });
+    control.onAdd = () => {
+      const container = L.DomUtil.create('div', 'leaflet-bar trip-control-stack');
+      const userButton = L.DomUtil.create('button', 'trip-control-button user-location-button', container);
+      userButton.type = 'button';
+      userButton.title = 'Center on your location';
+      userButton.setAttribute('aria-label', 'Center on your location');
+      userButton.innerHTML = '<span class="user-location-icon" aria-hidden="true"></span>';
+
+      const tripButton = L.DomUtil.create('button', 'trip-control-button trip-reset-button', container);
+      tripButton.type = 'button';
+      tripButton.title = 'Recenter trip';
+      tripButton.setAttribute('aria-label', 'Recenter trip');
+      tripButton.innerHTML = '<span class="trip-reset-icon" aria-hidden="true"></span>';
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(userButton, 'click', L.DomEvent.stop);
+      L.DomEvent.on(tripButton, 'click', L.DomEvent.stop);
+
+      L.DomEvent.on(userButton, 'click', () => {
+        if (userLocation) {
+          map.setView(userLocation, Math.max(map.getZoom(), 15));
+        }
+      });
+
+      L.DomEvent.on(tripButton, 'click', () => {
+        onReset?.();
+        if (origin && destination) {
+          const bounds = L.latLngBounds([origin, destination]);
+          map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+        }
+      });
+      return container;
+    };
+    control.addTo(map);
+    return () => {
+      control.remove();
+    };
+  }, [map, onReset, origin, destination, userLocation]);
+
+  return null;
+}
+
 /**
  * InteractiveMap Component with Live GPS and MBTA Routes
  */
@@ -78,6 +118,8 @@ function InteractiveMap({
   legendVisibility: controlledLegendVisibility,
   onLegendVisibilityChange,
   showLegend = true,
+  debugEnabled: controlledDebugEnabled,
+  onDebugEnabledChange,
 }) {
   const [userLocation, setUserLocation] = useState(null);
   const [routes, setRoutes] = useState([]);
@@ -85,20 +127,37 @@ function InteractiveMap({
   const [stopMarkers, setStopMarkers] = useState([]);
   const [routeShapes, setRouteShapes] = useState({});
   const [vehicles, setVehicles] = useState([]);
+  const [vehicleRouteTypes, setVehicleRouteTypes] = useState({});
+  const [routeColors, setRouteColors] = useState({});
+  const [routeTypes, setRouteTypes] = useState({});
   const [loading, setLoading] = useState(true);
-  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [debugEnabled] = useState(false);
   const [mouseLatLng, setMouseLatLng] = useState(null);
   const [mouseScreenPos, setMouseScreenPos] = useState(null);
   const [selectedRouteShape, setSelectedRouteShape] = useState(null);
+  const [autoFitEnabled, setAutoFitEnabled] = useState(true);
   const [legendVisibility, setLegendVisibility] = useState({
     user: true,
     origin: true,
     transfer: true,
     destination: true,
-    vehicles: true,
+    stations: true,
+    stationLines: {
+      commuter: true,
+      red: true,
+      orange: true,
+      blue: true,
+      green: true,
+      mattapan: true,
+    },
+    trains: true,
+    buses: true,
+    ferries: true,
   });
   const activeLegendVisibility = controlledLegendVisibility || legendVisibility;
   const updateLegendVisibility = onLegendVisibilityChange || setLegendVisibility;
+  const activeDebugEnabled =
+    typeof controlledDebugEnabled === 'boolean' ? controlledDebugEnabled : debugEnabled;
 
   // Boston default center
   const defaultCenter = [42.3601, -71.0589];
@@ -133,36 +192,56 @@ function InteractiveMap({
       try {
         setLoading(true);
         
-        // Fetch subway routes
-        const routesData = await MBTA_API.getRoutes({ type: '0,1' });
+        // Fetch subway + commuter rail routes
+        const routesData = await MBTA_API.getRoutes({ type: '0,1,2' });
         setRoutes(routesData.data || []);
 
-        // Fetch all stations (all routes) with route info for line colors
-        const stopsData = await MBTA_API.getStops({ 
-          location_type: 1
-        }, 'route');
-        setStops(stopsData.data || []);
-
+        // Fetch all stations for each route to capture route membership
         const routeColorById = new Map();
-        if (stopsData.included) {
-          stopsData.included
-            .filter((item) => item.type === 'route')
-            .forEach((route) => {
-              if (route?.attributes?.color) {
-                routeColorById.set(route.id, route.attributes.color);
-              }
-            });
-        }
-
-        const markers = (stopsData.data || []).map((stop) => {
-          const routeId = stop.relationships?.routes?.data?.[0]?.id;
-          return {
-            ...stop,
-            lineColor: routeColorById.get(routeId),
-          };
+        const routeTypeById = new Map();
+        (routesData.data || []).forEach((route) => {
+          if (route?.attributes?.color) {
+            routeColorById.set(route.id, route.attributes.color);
+          }
+          if (typeof route?.attributes?.type === 'number') {
+            routeTypeById.set(route.id, route.attributes.type);
+          }
         });
 
+        const stopMap = new Map();
+        await Promise.all(
+          (routesData.data || []).map(async (route) => {
+            try {
+              const routeStops = await MBTA_API.getStops({
+                route: route.id,
+                location_type: 1,
+              });
+              (routeStops.data || []).forEach((stop) => {
+                const existing = stopMap.get(stop.id);
+                if (existing) {
+                  existing.routeIds.add(route.id);
+                } else {
+                  stopMap.set(stop.id, {
+                    ...stop,
+                    routeIds: new Set([route.id]),
+                  });
+                }
+              });
+            } catch (error) {
+              console.error(`Error loading stops for route ${route.id}:`, error);
+            }
+          })
+        );
+
+        const markers = Array.from(stopMap.values()).map((stop) => ({
+          ...stop,
+          routeIds: Array.from(stop.routeIds || []),
+        }));
+
+        setStops(markers);
         setStopMarkers(markers);
+        setRouteColors(Object.fromEntries(routeColorById));
+        setRouteTypes(Object.fromEntries(routeTypeById));
 
         setLoading(false);
         onDataUpdated();
@@ -213,6 +292,15 @@ function InteractiveMap({
         const vehicleData = await MBTA_API.getVehicles(null);
         if (vehicleData.data) {
           setVehicles(vehicleData.data);
+          const routeTypeMap = {};
+          (vehicleData.included || [])
+            .filter((item) => item.type === 'route')
+            .forEach((route) => {
+              if (route?.id && typeof route?.attributes?.type === 'number') {
+                routeTypeMap[route.id] = route.attributes.type;
+              }
+            });
+          setVehicleRouteTypes(routeTypeMap);
           onDataUpdated();
         }
       } catch (error) {
@@ -264,7 +352,7 @@ function InteractiveMap({
   const createStopIcon = (isSelected, type) => {
     const colors = {
       origin: '#4CAF50',
-      transfer: '#FFC107',
+      transfer: '#9C27B0',
       destination: '#F44336',
       default: '#2196F3'
     };
@@ -280,13 +368,24 @@ function InteractiveMap({
     });
   };
 
+  const createDualStopIcon = (colorA, colorB, isSelected) => {
+    const size = isSelected ? 16 : 10;
+    return L.divIcon({
+      className: 'dual-stop-marker',
+      html: `<div class="dual-stop-marker-inner" style="--color-a: ${colorA}; --color-b: ${colorB}; width: ${size}px; height: ${size}px;"></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+  };
+
   // Create vehicle icon
-  const createVehicleIcon = () => {
+  const createVehicleIcon = (iconType) => {
+    const iconPath = iconType === 'bus' ? 'bus.svg' : iconType === 'ferry' ? 'ferry.svg' : 'train.svg';
     return L.divIcon({
       className: 'vehicle-marker',
-      html: `<div style="background-color: #111827; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4); animation: pulse 2s infinite;"></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6]
+      html: `<div style="width: 20px; height: 20px; border-radius: 6px; border: 2px solid white; background-color: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.35); background-image: url('/src/assets/${iconPath}'); background-repeat: no-repeat; background-position: center; background-size: 14px 14px;"></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
     });
   };
 
@@ -299,11 +398,38 @@ function InteractiveMap({
 
   const getStopName = (stop) => stop?.attributes?.name || stop?.name || '';
 
-  const originPosition = getStopCoordinates(selectedStops?.origin);
-  const destinationPosition = getStopCoordinates(selectedStops?.destination);
+  const originPosition = useMemo(() => {
+    const coords = getStopCoordinates(selectedStops?.origin);
+    return coords ? [coords[0], coords[1]] : null;
+  }, [
+    selectedStops?.origin?.attributes?.latitude,
+    selectedStops?.origin?.attributes?.longitude,
+    selectedStops?.origin?.latitude,
+    selectedStops?.origin?.longitude,
+  ]);
+
+  const destinationPosition = useMemo(() => {
+    const coords = getStopCoordinates(selectedStops?.destination);
+    return coords ? [coords[0], coords[1]] : null;
+  }, [
+    selectedStops?.destination?.attributes?.latitude,
+    selectedStops?.destination?.attributes?.longitude,
+    selectedStops?.destination?.latitude,
+    selectedStops?.destination?.longitude,
+  ]);
+  useEffect(() => {
+    if (originPosition && destinationPosition) {
+      setAutoFitEnabled(true);
+    }
+  }, [originPosition, destinationPosition]);
 
   const getRouteIdsForStop = (stop) => {
-    const routeData = stop?.relationships?.routes?.data;
+    if (Array.isArray(stop?.routeIds) && stop.routeIds.length > 0) {
+      return stop.routeIds.filter(Boolean);
+    }
+    const routeData =
+      stop?.relationships?.routes?.data ||
+      stop?.relationships?.route?.data;
     if (!routeData) return [];
     if (Array.isArray(routeData)) {
       return routeData.map((route) => route.id).filter(Boolean);
@@ -320,9 +446,94 @@ function InteractiveMap({
     return originRoutes.find((routeId) => destinationRoutes.includes(routeId)) || originRoutes[0];
   };
 
-  const getStopLineColor = (stopId) => {
-    const matched = stopMarkers.find(stop => stop.id === stopId);
-    return matched?.lineColor ? `#${matched.lineColor}` : '#2196F3';
+  const normalizeHexColor = (value) => {
+    if (!value || typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    const hex = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
+    const normalized = hex.toUpperCase();
+    if (/^[0-9A-F]{6}$/.test(normalized)) return `#${normalized}`;
+    if (/^[0-9A-F]{3}$/.test(normalized)) {
+      return `#${normalized.split('').map((char) => char + char).join('')}`;
+    }
+    return null;
+  };
+
+  const getFallbackLineColor = (routeId) => {
+    const id = routeId?.toLowerCase() || '';
+    if (id.includes('mattapan')) return '#FFD200';
+    if (id.startsWith('red')) return '#DA291C';
+    if (id.startsWith('blue')) return '#003DA5';
+    if (id.startsWith('orange')) return '#FF8C00';
+    if (id.startsWith('green')) return '#00843D';
+    return '#2196F3';
+  };
+
+  const getRouteTypeFallbackColor = (routeId) => {
+    const routeType = routeTypes[routeId];
+    if (routeType === 2) return '#7E3FF2'; // Commuter Rail
+    if (routeType === 1) return '#DA291C'; // Heavy Rail
+    if (routeType === 0) return '#00843D'; // Light Rail
+    return null;
+  };
+
+  const getStopLineColor = (stop) => {
+    const routeIds = getRouteIdsForStop(stop);
+
+    if (routeIds.length === 0) return '#2196F3';
+
+    const mattapanRoute = routeIds.find((routeId) => routeId?.toLowerCase().includes('mattapan'));
+    if (mattapanRoute) return '#FFD200';
+
+    const commuterRoute = routeIds.find((routeId) => routeTypes[routeId] === 2);
+    if (commuterRoute) return '#7E3FF2';
+
+    const apiColor = routeIds.map((routeId) => normalizeHexColor(routeColors[routeId])).find(Boolean);
+    if (apiColor) return apiColor;
+
+    const typeFallback = routeIds.map((routeId) => getRouteTypeFallbackColor(routeId)).find(Boolean);
+    if (typeFallback) return typeFallback;
+
+    return getFallbackLineColor(routeIds[0]);
+  };
+
+  const getStationGroups = (stop) => {
+    const routeIds = getRouteIdsForStop(stop);
+    if (routeIds.length === 0) return [];
+
+    const groups = new Set();
+
+    if (routeIds.some((routeId) => routeId?.toLowerCase().includes('mattapan'))) {
+      groups.add('mattapan');
+    }
+
+    if (routeIds.some((routeId) => routeTypes[routeId] === 2)) {
+      groups.add('commuter');
+    }
+
+    const normalized = routeIds.map((routeId) => routeId?.toLowerCase() || '');
+    if (normalized.some((routeId) => routeId.startsWith('red'))) groups.add('red');
+    if (normalized.some((routeId) => routeId.startsWith('orange'))) groups.add('orange');
+    if (normalized.some((routeId) => routeId.startsWith('blue'))) groups.add('blue');
+    if (normalized.some((routeId) => routeId.startsWith('green'))) groups.add('green');
+
+    return Array.from(groups);
+  };
+
+  const getStationGroupColors = (groups) => {
+    const colorByGroup = {
+      commuter: '#7E3FF2',
+      red: '#DA291C',
+      orange: '#FF8C00',
+      blue: '#003DA5',
+      green: '#00843D',
+      mattapan: '#FFD200',
+    };
+    const priority = ['red', 'orange', 'blue', 'green', 'mattapan', 'commuter'];
+    const ordered = [
+      ...priority.filter((group) => groups.includes(group)),
+      ...groups.filter((group) => !priority.includes(group)),
+    ];
+    return ordered.map((group) => colorByGroup[group]).filter(Boolean);
   };
 
   const getRouteColor = (routeId) => {
@@ -330,16 +541,79 @@ function InteractiveMap({
     return matched?.attributes?.color ? `#${matched.attributes.color}` : '#1F2937';
   };
 
+  const getVehicleStatusLabel = (status) => {
+    if (!status) return 'In service';
+    const normalized = status.toUpperCase();
+    const labels = {
+      INCOMING_AT: 'Arriving',
+      STOPPED_AT: 'Stopped',
+      IN_TRANSIT_TO: 'In transit',
+    };
+    if (labels[normalized]) return labels[normalized];
+    return normalized
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/^\w/, (letter) => letter.toUpperCase());
+  };
+
+  const getVehicleIconType = (routeType) => {
+    if (routeType === 3) return 'bus';
+    if (routeType === 4) return 'ferry';
+    return 'train';
+  };
+
+  const getVehicleLabel = (iconType) => {
+    if (iconType === 'bus') return 'Live Bus';
+    if (iconType === 'ferry') return 'Live Ferry';
+    return 'Live Train';
+  };
+
+  const formatVehicleSpeed = (speed) => {
+    if (typeof speed !== 'number') return '—';
+    return `${Math.round(speed * 2.237)} mph`;
+  };
+
   const getSelectedStopColor = () => '#0b2d6b';
   const getUserLocationColor = () => '#061a3a';
 
-  const getGreenLineLetter = (stop) => {
-    const routeData = stop?.relationships?.routes?.data;
-    if (!routeData) return null;
-    const routeIds = Array.isArray(routeData) ? routeData.map((route) => route.id) : [routeData.id];
-    const greenRoute = routeIds.find((routeId) => routeId?.startsWith('Green-'));
-    if (!greenRoute) return null;
-    return greenRoute.split('-')[1] || null;
+  const getStopLineBadges = (stop) => {
+    const routeIds = getRouteIdsForStop(stop);
+    const badges = [];
+    const addBadge = (key, label, color, shape = 'pill') => {
+      if (badges.some((badge) => badge.key === key)) return;
+      badges.push({ key, label, color, shape });
+    };
+
+    if (routeIds.some((routeId) => routeId?.toLowerCase().includes('mattapan'))) {
+      addBadge('mattapan', 'M', '#DA291C', 'circle');
+    }
+
+    if (routeIds.some((routeId) => routeTypes[routeId] === 2)) {
+      addBadge('commuter', 'CR', '#7E3FF2');
+    }
+
+    if (routeIds.some((routeId) => routeId?.startsWith('Red'))) {
+      addBadge('red', 'RL', '#DA291C');
+    }
+
+    if (routeIds.some((routeId) => routeId?.startsWith('Orange'))) {
+      addBadge('orange', 'OL', '#FF8C00');
+    }
+
+    if (routeIds.some((routeId) => routeId?.startsWith('Blue'))) {
+      addBadge('blue', 'BL', '#003DA5');
+    }
+
+    if (routeIds.some((routeId) => routeId?.startsWith('Green'))) {
+      addBadge('green', 'GL', '#00843D');
+      const greenRoute = routeIds.find((routeId) => routeId?.startsWith('Green-'));
+      const letter = greenRoute ? greenRoute.split('-')[1] : null;
+      if (letter) {
+        addBadge(`green-${letter}`, letter, '#00843D', 'circle');
+      }
+    }
+
+    return badges;
   };
 
   const createGreenLineLabel = (letter, color) =>
@@ -404,6 +678,10 @@ function InteractiveMap({
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
         className="interactive-map"
+        whenCreated={(map) => {
+          map.on('movestart', () => setAutoFitEnabled(false));
+          map.on('zoomstart', () => setAutoFitEnabled(false));
+        }}
       >
         <Pane name="selectedStops" style={{ zIndex: 650 }} />
         <Pane name="routeMotion" style={{ zIndex: 620 }} />
@@ -415,9 +693,19 @@ function InteractiveMap({
 
         {/* User's live location */}
         {activeLegendVisibility.user && <LocationMarker position={userLocation} />}
-        <FitBounds origin={originPosition} destination={destinationPosition} />
+        <FitBounds
+          origin={originPosition}
+          destination={destinationPosition}
+          allowAutoFit={autoFitEnabled}
+        />
+        <TripControlStack
+          origin={originPosition}
+          destination={destinationPosition}
+          userLocation={userLocation}
+          onReset={() => setAutoFitEnabled(true)}
+        />
         <DebugMouseTracker
-          enabled={debugEnabled}
+          enabled={activeDebugEnabled}
           onMove={(latlng, event) => {
             setMouseLatLng(latlng);
             setMouseScreenPos({ x: event.clientX, y: event.clientY });
@@ -438,8 +726,16 @@ function InteractiveMap({
         ))}
 
         {/* MBTA Stations */}
-        {stopMarkers.map((stop) => {
+        {activeLegendVisibility.stations && stopMarkers.map((stop) => {
           if (!stop.attributes.latitude || !stop.attributes.longitude) return null;
+
+          const stationGroups = getStationGroups(stop);
+          if (
+            stationGroups.length > 0 &&
+            !stationGroups.some((group) => activeLegendVisibility.stationLines?.[group])
+          ) {
+            return null;
+          }
 
           const position = [stop.attributes.latitude, stop.attributes.longitude];
           let stopType = 'default';
@@ -452,35 +748,71 @@ function InteractiveMap({
           else if (isDestination) stopType = 'destination';
 
           const isSelected = stopType !== 'default';
-          const lineColor = stop.lineColor ? `#${stop.lineColor}` : '#2196F3';
-          const greenLineLetter = getGreenLineLetter(stop);
+          const lineColor = getStopLineColor(stop);
+
+          const stopBadges = getStopLineBadges(stop);
+          const popup = (
+            <Popup>
+              <div className="stop-popup">
+                <div className="stop-name-row">
+                  {stopBadges.length > 0 && (
+                    <div className="stop-line-badges inline">
+                      {stopBadges.map((badge) => (
+                        <span
+                          key={badge.key}
+                          className={`stop-line-badge ${badge.shape === 'circle' ? 'circle' : ''}`}
+                          style={{ backgroundColor: badge.color }}
+                        >
+                          {badge.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <strong>{stop.attributes.name}</strong>
+                </div>
+                {isSelected && (
+                  <div className="stop-type-badge">{stopType.toUpperCase()}</div>
+                )}
+                {stop.attributes.wheelchair_boarding === 1 ? (
+                  <div className="accessibility-status centered">
+                    <img src="/src/assets/accessible-icon.svg" alt="" />
+                    <span>Accessible</span>
+                  </div>
+                ) : (
+                  <div className="accessibility-status centered">
+                    <img src="/src/assets/not-accessible.svg" alt="" />
+                    <span>Not accessible</span>
+                  </div>
+                )}
+              </div>
+            </Popup>
+          );
+
+          const dualColors = getStationGroupColors(stationGroups);
+          const isDual = dualColors.length >= 2;
 
           return (
             <React.Fragment key={stop.id}>
-              <CircleMarker
-                center={position}
-                radius={isSelected ? 8 : 5}
-                pathOptions={{
-                  color: '#ffffff',
-                  weight: isSelected ? 2.5 : 1.5,
-                  fillColor: lineColor,
-                  fillOpacity: 0.9,
-                }}
-              >
-                <Popup>
-                  <div className="stop-popup">
-                    <strong>{stop.attributes.name}</strong>
-                    {isSelected && (
-                      <div className="stop-type-badge">{stopType.toUpperCase()}</div>
-                    )}
-                    {stop.attributes.wheelchair_boarding === 1 && (
-                      <div>♿ Accessible</div>
-                    )}
-                  </div>
-                </Popup>
-              </CircleMarker>
-              {greenLineLetter && (
-                <Marker position={position} icon={createGreenLineLabel(greenLineLetter, lineColor)} />
+              {isDual ? (
+                <Marker
+                  position={position}
+                  icon={createDualStopIcon(dualColors[0], dualColors[1], isSelected)}
+                >
+                  {popup}
+                </Marker>
+              ) : (
+                <CircleMarker
+                  center={position}
+                  radius={isSelected ? 8 : 5}
+                  pathOptions={{
+                    color: '#ffffff',
+                    weight: isSelected ? 2.5 : 1.5,
+                    fillColor: lineColor,
+                    fillOpacity: 0.9,
+                  }}
+                >
+                  {popup}
+                </CircleMarker>
               )}
             </React.Fragment>
           );
@@ -540,25 +872,31 @@ function InteractiveMap({
         )}
 
         {/* Live Vehicle Positions */}
-        {activeLegendVisibility.vehicles && vehicles.map((vehicle) => {
+        {vehicles.map((vehicle) => {
           if (!vehicle.attributes.latitude || !vehicle.attributes.longitude) return null;
 
           const position = [vehicle.attributes.latitude, vehicle.attributes.longitude];
-          const routeColor = '111827';
+          const routeId = vehicle.relationships?.route?.data?.id;
+          const routeTypeFromRoute = routeId ? vehicleRouteTypes[routeId] : null;
+          const routeType = vehicle.attributes?.route_type ?? routeTypeFromRoute ?? null;
+          const iconType = getVehicleIconType(routeType);
+          const isVisible =
+            (iconType === 'train' && activeLegendVisibility.trains) ||
+            (iconType === 'bus' && activeLegendVisibility.buses) ||
+            (iconType === 'ferry' && activeLegendVisibility.ferries);
+          if (!isVisible) return null;
 
           return (
             <Marker
               key={vehicle.id}
               position={position}
-              icon={createVehicleIcon(routeColor)}
+              icon={createVehicleIcon(iconType)}
             >
               <Popup>
                 <div className="vehicle-popup">
-                  <strong>🚇 Live Vehicle</strong>
-                  <div>Status: {vehicle.attributes.current_status || 'In transit'}</div>
-                  {vehicle.attributes.speed && (
-                    <div>Speed: {Math.round(vehicle.attributes.speed * 2.237)} mph</div>
-                  )}
+                  <strong>{getVehicleLabel(iconType)}</strong>
+                  <div>Status: {getVehicleStatusLabel(vehicle.attributes.current_status)}</div>
+                  <div>Speed: {formatVehicleSpeed(vehicle.attributes.speed)}</div>
                 </div>
               </Popup>
             </Marker>
@@ -574,25 +912,7 @@ function InteractiveMap({
         />
       )}
 
-      <div className="map-debug-toggle">
-        <label className="map-debug-label">
-          <input
-            type="checkbox"
-            checked={debugEnabled}
-            onChange={(event) => {
-              const nextValue = event.target.checked;
-              setDebugEnabled(nextValue);
-              if (!nextValue) {
-                setMouseLatLng(null);
-                setMouseScreenPos(null);
-              }
-            }}
-          />
-          Show Coordinates
-        </label>
-      </div>
-
-      {debugEnabled && mouseLatLng && mouseScreenPos && (
+      {activeDebugEnabled && mouseLatLng && mouseScreenPos && (
         <div
           className="map-debug-coordinates"
           style={{
@@ -613,9 +933,39 @@ export function LiveMapLegend({
   onLegendVisibilityChange,
   className = '',
 }) {
+  const [stationsExpanded, setStationsExpanded] = useState(false);
+  const stationLineOptions = [
+    { key: 'commuter', label: 'Commuter Rail', color: '#7E3FF2' },
+    { key: 'red', label: 'Red Line', color: '#DA291C' },
+    { key: 'orange', label: 'Orange Line', color: '#FF8C00' },
+    { key: 'blue', label: 'Blue Line', color: '#003DA5' },
+    { key: 'green', label: 'Green Line', color: '#00843D' },
+    { key: 'mattapan', label: 'Mattapan Trolley', color: '#FFD200' },
+  ];
+
+  const handleStationsToggle = (checked) => {
+    onLegendVisibilityChange((prev) => ({
+      ...prev,
+      stations: checked,
+      stationLines: Object.fromEntries(
+        stationLineOptions.map((option) => [option.key, checked])
+      ),
+    }));
+  };
+
+  const handleStationLineToggle = (lineKey, checked) => {
+    onLegendVisibilityChange((prev) => ({
+      ...prev,
+      stationLines: {
+        ...prev.stationLines,
+        [lineKey]: checked,
+      },
+    }));
+  };
+
   return (
     <div className={`map-legend ${className}`.trim()}>
-      <h4>🗺️ Live Map</h4>
+      <h4>🗺️ Legend</h4>
       <label className="legend-item">
         <input
           className="legend-toggle"
@@ -625,20 +975,24 @@ export function LiveMapLegend({
             onLegendVisibilityChange((prev) => ({ ...prev, user: event.target.checked }))
           }
         />
-        <div className="legend-dot" style={{ background: '#061a3a' }}></div>
-        <span>Your Location (GPS)</span>
+        <div className="legend-dot legend-user-dot" style={{ background: '#2563eb' }}></div>
+        <span>Your Location</span>
       </label>
       <label className="legend-item">
         <input
           className="legend-toggle"
           type="checkbox"
-          checked={legendVisibility.origin}
+          checked={legendVisibility.origin && legendVisibility.destination}
           onChange={(event) =>
-            onLegendVisibilityChange((prev) => ({ ...prev, origin: event.target.checked }))
+            onLegendVisibilityChange((prev) => ({
+              ...prev,
+              origin: event.target.checked,
+              destination: event.target.checked,
+            }))
           }
         />
-        <div className="legend-dot" style={{ background: '#0b2d6b' }}></div>
-        <span>Origin</span>
+        <div className="legend-dot" style={{ background: '#000000' }}></div>
+        <span>Start / Destination</span>
       </label>
       <label className="legend-item">
         <input
@@ -649,39 +1003,89 @@ export function LiveMapLegend({
             onLegendVisibilityChange((prev) => ({ ...prev, transfer: event.target.checked }))
           }
         />
-        <div className="legend-dot" style={{ background: '#FFC107' }}></div>
+        <div className="legend-dot" style={{ background: '#9C27B0' }}></div>
         <span>Transfer</span>
       </label>
-      <label className="legend-item">
-        <input
-          className="legend-toggle"
-          type="checkbox"
-          checked={legendVisibility.destination}
-          onChange={(event) =>
-            onLegendVisibilityChange((prev) => ({ ...prev, destination: event.target.checked }))
-          }
-        />
-        <div className="legend-dot" style={{ background: '#0b2d6b' }}></div>
-        <span>Destination</span>
-      </label>
-      <label className="legend-item">
-        <input
-          className="legend-toggle"
-          type="checkbox"
-          checked={legendVisibility.vehicles}
-          onChange={(event) =>
-            onLegendVisibilityChange((prev) => ({ ...prev, vehicles: event.target.checked }))
-          }
-        />
-        <div className="legend-dot vehicle-dot"></div>
-        <span>Live Vehicles</span>
-      </label>
-      {legendVisibility.vehicles && (
-        <div className="live-indicator">
-          <span className="live-dot"></span>
-          <span>Live Updates</span>
+      <div className="legend-item legend-item-stations">
+        <label className="legend-item-label">
+          <input
+            className="legend-toggle"
+            type="checkbox"
+            checked={legendVisibility.stations}
+            onChange={(event) => handleStationsToggle(event.target.checked)}
+          />
+          <div className="legend-dot legend-rainbow-dot"></div>
+          <span>Stations</span>
+        </label>
+        <button
+          type="button"
+          className={`legend-dropdown-toggle ${stationsExpanded ? 'open' : ''}`}
+          onClick={() => setStationsExpanded((prev) => !prev)}
+          aria-label="Toggle station line filters"
+        >
+          ▾
+        </button>
+      </div>
+      {stationsExpanded && (
+        <div className="legend-station-lines">
+          {stationLineOptions.map((option) => (
+            <label className="legend-item legend-subitem" key={option.key}>
+              <input
+                className="legend-toggle"
+                type="checkbox"
+                checked={legendVisibility.stationLines?.[option.key]}
+                onChange={(event) =>
+                  handleStationLineToggle(option.key, event.target.checked)
+                }
+              />
+              <div className="legend-dot" style={{ background: option.color }}></div>
+              <span>{option.label}</span>
+            </label>
+          ))}
         </div>
       )}
+      <label className="legend-item">
+        <input
+          className="legend-toggle"
+          type="checkbox"
+          checked={legendVisibility.trains}
+          onChange={(event) =>
+            onLegendVisibilityChange((prev) => ({ ...prev, trains: event.target.checked }))
+          }
+        />
+        <div className="legend-icon">
+          <img src="/src/assets/train.svg" alt="" />
+        </div>
+        <span>Live Trains</span>
+      </label>
+      <label className="legend-item">
+        <input
+          className="legend-toggle"
+          type="checkbox"
+          checked={legendVisibility.buses}
+          onChange={(event) =>
+            onLegendVisibilityChange((prev) => ({ ...prev, buses: event.target.checked }))
+          }
+        />
+        <div className="legend-icon">
+          <img src="/src/assets/bus.svg" alt="" />
+        </div>
+        <span>Live Buses</span>
+      </label>
+      <label className="legend-item">
+        <input
+          className="legend-toggle"
+          type="checkbox"
+          checked={legendVisibility.ferries}
+          onChange={(event) =>
+            onLegendVisibilityChange((prev) => ({ ...prev, ferries: event.target.checked }))
+          }
+        />
+        <div className="legend-icon">
+          <img src="/src/assets/ferry.svg" alt="" />
+        </div>
+        <span>Live Ferries</span>
+      </label>
     </div>
   );
 }

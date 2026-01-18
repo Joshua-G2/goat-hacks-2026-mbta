@@ -349,21 +349,21 @@ function TripPlanner({
         <div className="predictions-section">
           
           <div className="prediction-item">
-            <strong>{selectedOrigin?.attributes.name}</strong>
+            <strong>From {selectedOrigin?.attributes.name}:</strong>
             <div className="prediction-time">
               {predictions.originPred?.data?.[0]?.attributes?.departure_time 
                 ? formatPredictionTime(predictions.originPred.data[0].attributes.departure_time)
-                : '—'}
+                : 'No predictions available'}
             </div>
           </div>
 
           {selectedTransfer && (
             <div className="prediction-item">
-              <strong>{selectedTransfer.attributes.name}</strong>
+              <strong>Transfer at {selectedTransfer.attributes.name}:</strong>
               <div className="prediction-time">
                 {predictions.destPred?.data?.[0]?.attributes?.departure_time 
                   ? formatPredictionTime(predictions.destPred.data[0].attributes.departure_time)
-                  : '—'}
+                  : 'No predictions available'}
               </div>
               <div className="walk-time">
                 Walking time: {predictions.walkMinutes?.toFixed(1)} min
@@ -373,11 +373,11 @@ function TripPlanner({
 
           {!selectedTransfer && selectedDestination && (
             <div className="prediction-item">
-              <strong>{selectedDestination.attributes.name}</strong>
+              <strong>Arriving at {selectedDestination.attributes.name}:</strong>
               <div className="prediction-time">
                 {predictions.destPred?.data?.[0]?.attributes?.arrival_time 
                   ? formatPredictionTime(predictions.destPred.data[0].attributes.arrival_time)
-                  : '—'}
+                  : 'No predictions available'}
               </div>
             </div>
           )}

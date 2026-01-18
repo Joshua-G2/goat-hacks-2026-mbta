@@ -141,11 +141,15 @@ body {
 
 .app-footer {
   background: white;
-  padding: 1.5rem;
-  text-align: center;
+  padding: 0.75rem 1.5rem;
   border-top: 1px solid #e0e0e0;
   color: var(--text-secondary);
   font-size: 0.9rem;
+  text-align: center;
+}
+
+.app-footer p {
+  margin: 0;
 }
 
 .app-footer a {
@@ -156,6 +160,18 @@ body {
 
 .app-footer a:hover {
   text-decoration: underline;
+}
+
+.footer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.footer-toggle input {
+  accent-color: #2563eb;
 }
 
 /* Game Mode Specific Styles */
