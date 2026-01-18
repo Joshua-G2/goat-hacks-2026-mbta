@@ -31,6 +31,12 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
   animation: slideUp 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quest-dialog:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.32);
 }
 
 @keyframes slideUp {
@@ -54,12 +60,23 @@
   color: #999;
   cursor: pointer;
   line-height: 1;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.1s ease;
   z-index: 1;
 }
 
 .close-button:hover {
   color: #333;
+}
+
+.close-button:active {
+  transform: scale(0.95);
+}
+
+.close-button:focus-visible {
+  outline: none;
+  color: #1f2937;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.4);
+  border-radius: 6px;
 }
 
 .quest-header {
@@ -114,6 +131,12 @@
   border-left: 4px solid #667eea;
   margin-bottom: 20px;
   font-style: italic;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quest-text:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
 }
 
 .audio-controls {
@@ -138,6 +161,15 @@
 .play-audio-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+.play-audio-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.play-audio-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.45);
 }
 
 .play-audio-button:disabled {
@@ -172,6 +204,12 @@
   background: white;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quest-detail-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
 }
 
 .detail-icon {
@@ -212,6 +250,15 @@
   background: #d0d0d0;
 }
 
+.decline-button:active {
+  transform: translateY(1px);
+}
+
+.decline-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.45);
+}
+
 .accept-button {
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   color: white;
@@ -221,6 +268,15 @@
 .accept-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+.accept-button:active {
+  transform: translateY(0);
+}
+
+.accept-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.45);
 }
 
 /* Scrollbar styling */

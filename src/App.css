@@ -89,6 +89,11 @@ body {
   animation: button-bounce 0.25s ease;
 }
 
+.mode-toggle-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45);
+}
+
 @keyframes button-shake {
   0% { transform: translateY(-2px) rotate(0deg); }
   8% { transform: translateY(-2px) rotate(-3deg); }
@@ -156,10 +161,18 @@ body {
   color: var(--blue-line);
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
 .app-footer a:hover {
   text-decoration: underline;
+}
+
+.app-footer a:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(0, 61, 165, 0.7);
 }
 
 .footer-toggle {
@@ -250,6 +263,15 @@ body {
 .game-mode-toggle-float:hover {
   transform: scale(1.05);
   background: #dc2626; /* Red-600 */
+}
+
+.game-mode-toggle-float:active {
+  transform: scale(1);
+}
+
+.game-mode-toggle-float:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.5);
 }
 
 /* Responsive Design */

@@ -21,6 +21,8 @@ function TripPlanner({
   selectedOrigin,
   selectedDestination,
   selectedTransfer,
+  originRouteId,
+  destinationRouteId,
   onOriginChange = () => {},
   onDestinationChange = () => {},
   onTransferChange = () => {},
@@ -44,7 +46,7 @@ function TripPlanner({
   useEffect(() => {
     const loadRoutes = async () => {
       try {
-        const data = await MBTA_API.getRoutes();
+        const data = await MBTA_API.getRoutes({ type: '0,1,2' });
         setRoutes(data.data || []);
       } catch (err) {
         console.error('Error loading routes:', err);
@@ -53,6 +55,24 @@ function TripPlanner({
     };
     loadRoutes();
   }, []);
+
+  useEffect(() => {
+    if (!originRouteId || routes.length === 0) return;
+    if (originRoute?.id === originRouteId) return;
+    const route = routes.find((item) => item.id === originRouteId);
+    if (route) {
+      setOriginRoute(route);
+    }
+  }, [originRouteId, originRoute?.id, routes]);
+
+  useEffect(() => {
+    if (!destinationRouteId || routes.length === 0) return;
+    if (destinationRoute?.id === destinationRouteId) return;
+    const route = routes.find((item) => item.id === destinationRouteId);
+    if (route) {
+      setDestinationRoute(route);
+    }
+  }, [destinationRouteId, destinationRoute?.id, routes]);
 
   // Load stops when origin route changes
   useEffect(() => {
@@ -120,6 +140,7 @@ function TripPlanner({
       const fetchPredictionsAndAnalyze = async () => {
         setLoading(true);
         try {
+          // Pull origin + downstream predictions together for timing math.
           const promises = [
             MBTA_API.getPredictions(selectedOrigin.id, { route: originRoute?.id })
           ];

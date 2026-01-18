@@ -14,6 +14,12 @@
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 0;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.interactive-map:hover {
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+  transform: translateY(-1px);
 }
 
 .interactive-map-container .leaflet-container {
@@ -39,6 +45,12 @@
   background: rgba(255,255,255,0.95);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.interactive-map-container .trip-control-stack:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.22);
 }
 
 .interactive-map-container .trip-control-button {
@@ -50,6 +62,7 @@
   color: #1f2937;
   padding: 0;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
 }
 
 .interactive-map-container .trip-control-button + .trip-control-button {
@@ -58,6 +71,15 @@
 
 .interactive-map-container .trip-control-button:hover {
   background: #f3f4f6;
+}
+
+.interactive-map-container .trip-control-button:active {
+  transform: translateY(1px);
+}
+
+.interactive-map-container .trip-control-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.35);
 }
 
 .interactive-map-container .trip-control-button:first-child {
@@ -76,16 +98,32 @@
   background: rgba(255,255,255,0.95);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.interactive-map-container .leaflet-control-zoom:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.22);
 }
 
 .interactive-map-container .leaflet-control-zoom a {
   background: rgba(255,255,255,0.95);
   border: 1px solid #e2e8f0;
   color: #1f2937;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .interactive-map-container .leaflet-control-zoom a:hover {
   background: #f3f4f6;
+}
+
+.interactive-map-container .leaflet-control-zoom a:active {
+  background: #e5e7eb;
+}
+
+.interactive-map-container .leaflet-control-zoom a:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.35);
 }
 
 .interactive-map-container .leaflet-control-zoom a:first-child {
@@ -151,6 +189,12 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   z-index: 1000;
   pointer-events: auto;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.map-legend:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.24);
 }
 
 .map-legend.embedded {
@@ -172,6 +216,12 @@
   font-size: 13px;
   color: #333;
   cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.legend-item:hover {
+  color: #0f172a;
+  transform: translateX(2px);
 }
 
 .legend-item-stations {
@@ -184,6 +234,11 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.legend-item-label:hover {
+  color: #0f172a;
 }
 
 .legend-dropdown-toggle {
@@ -199,7 +254,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.legend-dropdown-toggle:hover {
+  background: #f8fafc;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
+}
+
+.legend-dropdown-toggle:active {
+  transform: scale(0.96);
+}
+
+.legend-dropdown-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .legend-dropdown-toggle.open {
@@ -233,6 +302,23 @@
   border-radius: 50%;
   border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.legend-item:hover .legend-dot {
+  transform: scale(1.08);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+
+.legend-dot.legend-origin-destination,
+.legend-dot.legend-transfer-dot {
+  width: 20px;
+  height: 20px;
+}
+
+.legend-dot.legend-user-dot {
+  width: 18px;
+  height: 18px;
 }
 
 .legend-rainbow-dot {
@@ -249,6 +335,11 @@
 
 .dual-stop-marker {
   background: transparent;
+  transition: transform 0.2s ease;
+}
+
+.dual-stop-marker:hover {
+  transform: scale(1.08);
 }
 
 .dual-stop-marker-inner {
@@ -261,6 +352,11 @@
     var(--color-b) 180deg,
     var(--color-b) 360deg
   );
+  transition: box-shadow 0.2s ease;
+}
+
+.dual-stop-marker:hover .dual-stop-marker-inner {
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
 }
 
 .legend-user-dot {
@@ -277,6 +373,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.legend-item:hover .legend-icon {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.14);
 }
 
 .legend-icon img {
@@ -295,10 +397,12 @@
   font-size: 12px;
   z-index: 2000;
   pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .selected-stop-marker {
   filter: drop-shadow(0 0 8px rgba(15, 23, 42, 0.35));
+  transition: filter 0.2s ease;
 }
 
 .user-location-marker {
@@ -312,9 +416,61 @@
   stroke-dasharray: 6 10;
 }
 
+.trip-route-line {
+  filter: drop-shadow(0 0 6px rgba(15, 23, 42, 0.5));
+}
+
 .legend-toggle {
   margin: 0;
   accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.custom-stop-marker {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.custom-stop-marker:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.25));
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leaflet-popup-content-wrapper:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22);
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
+}
+
+.leaflet-popup-close-button {
+  color: #64748b;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #0f172a;
+  transform: scale(1.05);
+}
+
+.stop-popup {
+  display: grid;
+  gap: 6px;
+}
+
+.stop-popup strong {
+  color: #0f172a;
 }
 
 

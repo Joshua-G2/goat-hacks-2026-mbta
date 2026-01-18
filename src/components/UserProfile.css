@@ -3,6 +3,12 @@
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-profile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.14);
 }
 
 .profile-header {
@@ -22,6 +28,12 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.avatar:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
 }
 
 .avatar-icon {
@@ -83,6 +95,11 @@
   overflow: hidden;
   position: relative;
   margin-bottom: 8px;
+  transition: box-shadow 0.2s ease;
+}
+
+.progress-bar-container:hover {
+  box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.2);
 }
 
 .progress-bar-fill {
@@ -136,6 +153,10 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.stat-card:active {
+  transform: translateY(0);
+}
+
 .stat-icon {
   font-size: 32px;
 }
@@ -185,11 +206,12 @@
   align-items: center;
   gap: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .achievement-item:hover {
   transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
 }
 
 .achievement-badge {
@@ -224,6 +246,11 @@
   background: #f0f4ff;
   border-radius: 10px;
   padding: 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.reward-progress:hover {
+  box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.2);
 }
 
 .reward-progress h3 {

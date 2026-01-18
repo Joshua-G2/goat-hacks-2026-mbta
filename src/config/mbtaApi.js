@@ -169,6 +169,19 @@ export const MBTA_API = {
   },
 
   /**
+   * Fetch route patterns (ordered stops for routes)
+   * @param {string} routeId - Route ID
+   * @param {string} include - Related resources to include
+   * @returns {Promise<Object>} Route pattern data
+   */
+  getRoutePatterns: (routeId, include = 'stops') => {
+    return fetchMBTA('/route_patterns', {
+      'filter[route]': routeId,
+      include,
+    });
+  },
+
+  /**
    * Fetch live vehicle positions
    * @param {string} routeId - Route ID
    * @param {string} include - Related resources to include

@@ -148,7 +148,8 @@ function InteractiveMap({
   const [debugEnabled] = useState(false);
   const [mouseLatLng, setMouseLatLng] = useState(null);
   const [mouseScreenPos, setMouseScreenPos] = useState(null);
-  const [selectedRouteShape, setSelectedRouteShape] = useState(null);
+  const [selectedRouteShapes, setSelectedRouteShapes] = useState([]);
+  const [selectedTripSegments, setSelectedTripSegments] = useState([]);
   const [autoFitEnabled, setAutoFitEnabled] = useState(true);
   const [legendVisibility, setLegendVisibility] = useState({
     user: true,
@@ -496,16 +497,22 @@ function InteractiveMap({
     const routeData =
       stop?.relationships?.routes?.data ||
       stop?.relationships?.route?.data;
-    if (!routeData) return [];
+    if (!routeData) {
+      const fallbackStop = stopMarkers.find((marker) => marker.id === stop?.id);
+      if (Array.isArray(fallbackStop?.routeIds) && fallbackStop.routeIds.length > 0) {
+        return fallbackStop.routeIds.filter(Boolean);
+      }
+      return [];
+    }
     if (Array.isArray(routeData)) {
       return routeData.map((route) => route.id).filter(Boolean);
     }
     return routeData.id ? [routeData.id] : [];
   };
 
-  const findCommonRouteId = () => {
-    const originRoutes = getRouteIdsForStop(selectedStops?.origin);
-    const destinationRoutes = getRouteIdsForStop(selectedStops?.destination);
+  const findCommonRouteIdForStops = (originStop, destinationStop) => {
+    const originRoutes = getRouteIdsForStop(originStop);
+    const destinationRoutes = getRouteIdsForStop(destinationStop);
     if (originRoutes.length === 0 || destinationRoutes.length === 0) {
       return originRoutes[0] || destinationRoutes[0] || null;
     }
@@ -717,6 +724,250 @@ function InteractiveMap({
     return badges;
   };
 
+  const getRoutePatternSegment = async (routeId, fromStopId, toStopId) => {
+    if (!routeId || !fromStopId || !toStopId) return null;
+    const patternData = await MBTA_API.getRoutePatterns(routeId, 'stops');
+    const includedStops = new Map(
+      (patternData?.included || [])
+        .filter((item) => item.type === 'stop')
+        .map((stop) => [stop.id, stop])
+    );
+    let bestSegment = null;
+
+    const getShapeCandidatesForRoute = async (targetRouteId) => {
+      const cached = routeShapes
+        .filter((shape) => shape.routeId === targetRouteId)
+        .map((shape) => shape.coordinates)
+        .filter((coords) => Array.isArray(coords) && coords.length > 1);
+      if (cached.length > 0) return cached;
+
+      try {
+        const shapeData = await MBTA_API.getShapes(targetRouteId);
+        return (shapeData?.data || [])
+          .map((shape) =>
+            shape?.attributes?.polyline ? decodePolyline(shape.attributes.polyline) : []
+          )
+          .filter((coords) => coords.length > 1);
+      } catch (error) {
+        console.error(`Error loading shapes for route ${targetRouteId}:`, error);
+        return [];
+      }
+    };
+
+    const getDistanceSquared = (pointA, pointB) => {
+      const dLat = pointA[0] - pointB[0];
+      const dLng = pointA[1] - pointB[1];
+      return dLat * dLat + dLng * dLng;
+    };
+
+    const findNearestIndex = (coordinates, target) => {
+      let bestIndex = 0;
+      let bestDistance = Infinity;
+      coordinates.forEach((point, index) => {
+        const dist = getDistanceSquared(point, target);
+        if (dist < bestDistance) {
+          bestDistance = dist;
+          bestIndex = index;
+        }
+      });
+      return { index: bestIndex, distance: bestDistance };
+    };
+
+    const buildShapePathThroughStops = (shapeCoordinates, stopCoordinates) => {
+      if (!shapeCoordinates?.length || stopCoordinates.length < 2) return null;
+      const nearest = stopCoordinates.map((stop) => findNearestIndex(shapeCoordinates, stop));
+      const indices = nearest.map((item) => item.index);
+      const forward = indices.every((value, idx) => idx === 0 || value >= indices[idx - 1]);
+      const backward = indices.every((value, idx) => idx === 0 || value <= indices[idx - 1]);
+      if (!forward && !backward) return null;
+
+      let coords = shapeCoordinates;
+      let stopIndices = indices;
+      if (backward) {
+        coords = [...shapeCoordinates].reverse();
+        const maxIndex = shapeCoordinates.length - 1;
+        stopIndices = indices.map((idx) => maxIndex - idx);
+      }
+
+      const path = [];
+      const pushIfFar = (point) => {
+        if (!path.length) {
+          path.push(point);
+          return;
+        }
+        const last = path[path.length - 1];
+        if (getDistanceSquared(last, point) > 1e-12) {
+          path.push(point);
+        }
+      };
+
+      stopIndices.forEach((startIndex, idx) => {
+        const stopPoint = stopCoordinates[idx];
+        pushIfFar(stopPoint);
+        if (idx === stopIndices.length - 1) return;
+        const endIndex = stopIndices[idx + 1];
+        const segment = coords.slice(startIndex, endIndex + 1);
+        segment.forEach((point) => pushIfFar(point));
+        pushIfFar(stopCoordinates[idx + 1]);
+      });
+
+      return {
+        coordinates: path,
+        cost: nearest.reduce((total, item) => total + item.distance, 0),
+      };
+    };
+
+    const resolveStopCoordinate = (stopId) => {
+      if (!stopId) return null;
+      const marker = stopMarkers.find((stop) => stop.id === stopId);
+      if (marker?.attributes?.latitude && marker?.attributes?.longitude) {
+        return [marker.attributes.latitude, marker.attributes.longitude];
+      }
+      const included = includedStops.get(stopId);
+      if (included?.attributes?.latitude && included?.attributes?.longitude) {
+        return [included.attributes.latitude, included.attributes.longitude];
+      }
+      let child = null;
+      includedStops.forEach((stop) => {
+        const parentId = stop?.relationships?.parent_station?.data?.id;
+        if (!child && parentId === stopId) {
+          child = stop;
+        }
+      });
+      if (child?.attributes?.latitude && child?.attributes?.longitude) {
+        return [child.attributes.latitude, child.attributes.longitude];
+      }
+      return null;
+    };
+
+    const shapeCandidates = await getShapeCandidatesForRoute(routeId);
+
+    for (const pattern of patternData?.data || []) {
+      const stopIds = pattern.relationships?.stops?.data?.map((stop) => stop.id) || [];
+      const getCandidateIds = (targetStopId) => {
+        if (!targetStopId) return [];
+        if (stopIds.includes(targetStopId)) return [targetStopId];
+
+        const candidates = new Set();
+        const children = [];
+        includedStops.forEach((stop, stopId) => {
+          const parentId = stop?.relationships?.parent_station?.data?.id;
+          if (parentId === targetStopId) {
+            children.push(stopId);
+          }
+        });
+        children.forEach((childId) => candidates.add(childId));
+
+        const directStop = includedStops.get(targetStopId);
+        const parentId = directStop?.relationships?.parent_station?.data?.id;
+        if (parentId && stopIds.includes(parentId)) {
+          candidates.add(parentId);
+        }
+
+        if (candidates.size > 0) return Array.from(candidates);
+        return [targetStopId];
+      };
+
+      const fromCandidates = getCandidateIds(fromStopId);
+      const toCandidates = getCandidateIds(toStopId);
+      const fromIndices = fromCandidates
+        .map((candidate) => stopIds.indexOf(candidate))
+        .filter((index) => index !== -1);
+      const toIndices = toCandidates
+        .map((candidate) => stopIds.indexOf(candidate))
+        .filter((index) => index !== -1);
+      if (fromIndices.length === 0 || toIndices.length === 0) continue;
+
+      let bestPair = null;
+      fromIndices.forEach((fromIndex) => {
+        toIndices.forEach((toIndex) => {
+          const length = Math.abs(toIndex - fromIndex) + 1;
+          if (!bestPair || length < bestPair.length) {
+            bestPair = { fromIndex, toIndex, length };
+          }
+        });
+      });
+      if (!bestPair) continue;
+
+      const forward = bestPair.fromIndex <= bestPair.toIndex;
+      const slice = forward
+        ? stopIds.slice(bestPair.fromIndex, bestPair.toIndex + 1)
+        : stopIds.slice(bestPair.toIndex, bestPair.fromIndex + 1).reverse();
+      const coords = slice
+        .map((stopId) => {
+          const stop = includedStops.get(stopId);
+          const lat = stop?.attributes?.latitude;
+          const lng = stop?.attributes?.longitude;
+          return typeof lat === 'number' && typeof lng === 'number' ? [lat, lng] : null;
+        })
+        .filter(Boolean);
+      if (coords.length < 2) continue;
+      const candidateSegments = [{ coordinates: coords, cost: coords.length }];
+      shapeCandidates.forEach((shapeCoords) => {
+        const candidate = buildShapePathThroughStops(shapeCoords, coords);
+        if (candidate) candidateSegments.push(candidate);
+      });
+      const bestCandidate = candidateSegments.reduce((best, current) => {
+        if (!best || current.cost < best.cost) return current;
+        return best;
+      }, null);
+      if (!bestCandidate) continue;
+      if (!bestSegment || bestCandidate.cost < bestSegment.cost) {
+        bestSegment = { routeId, coordinates: bestCandidate.coordinates, cost: bestCandidate.cost };
+      }
+    }
+
+    if (!bestSegment && shapeCandidates.length > 0) {
+      const fromCoord = resolveStopCoordinate(fromStopId);
+      const toCoord = resolveStopCoordinate(toStopId);
+      if (fromCoord && toCoord) {
+        const routeStops = stopMarkers
+          .filter((stop) => Array.isArray(stop.routeIds) && stop.routeIds.includes(routeId))
+          .map((stop) => ({
+            id: stop.id,
+            coord: [stop.attributes.latitude, stop.attributes.longitude],
+          }))
+          .filter((item) => typeof item.coord[0] === 'number' && typeof item.coord[1] === 'number');
+
+        const fallbackCandidates = shapeCandidates
+          .map((shapeCoords) => {
+            const start = findNearestIndex(shapeCoords, fromCoord);
+            const end = findNearestIndex(shapeCoords, toCoord);
+            const forward = start.index <= end.index;
+            const stopWithIndex = routeStops.map((stop) => ({
+              ...stop,
+              index: findNearestIndex(shapeCoords, stop.coord).index,
+            }));
+            const betweenStops = stopWithIndex
+              .filter((stop) =>
+                forward
+                  ? stop.index >= start.index && stop.index <= end.index
+                  : stop.index <= start.index && stop.index >= end.index
+              )
+              .sort((a, b) => (forward ? a.index - b.index : b.index - a.index));
+            const stopCoords = [fromCoord, ...betweenStops.map((stop) => stop.coord), toCoord];
+            const candidate = buildShapePathThroughStops(shapeCoords, stopCoords);
+            if (!candidate) return null;
+            return {
+              coordinates: candidate.coordinates,
+              cost: candidate.cost + betweenStops.length * 0.5,
+            };
+          })
+          .filter(Boolean);
+
+        const fallbackBest = fallbackCandidates.reduce((best, current) => {
+          if (!best || current.cost < best.cost) return current;
+          return best;
+        }, null);
+        if (fallbackBest) {
+          bestSegment = { routeId, coordinates: fallbackBest.coordinates, cost: fallbackBest.cost };
+        }
+      }
+    }
+
+    return bestSegment;
+  };
+
   const createGreenLineLabel = (letter, color) =>
     L.divIcon({
       className: 'green-line-label',
@@ -726,38 +977,54 @@ function InteractiveMap({
     });
 
   useEffect(() => {
-    const loadSelectedRouteShape = async () => {
-      const routeId = findCommonRouteId();
-      if (!routeId) {
-        setSelectedRouteShape(null);
+    const loadSelectedRouteShapes = async () => {
+      if (!selectedStops?.origin || !selectedStops?.destination) {
+        setSelectedRouteShapes([]);
+        setSelectedTripSegments([]);
         return;
       }
 
+      const segments = selectedStops?.transfer
+        ? [
+            { from: selectedStops.origin, to: selectedStops.transfer },
+            { from: selectedStops.transfer, to: selectedStops.destination },
+          ]
+        : [{ from: selectedStops.origin, to: selectedStops.destination }];
+
       try {
-        const shapeData = await MBTA_API.getShapes(routeId);
-        const shape = shapeData?.data?.[0];
-        if (!shape?.attributes?.polyline) {
-          setSelectedRouteShape(null);
-          return;
+        const shapes = [];
+        const tripSegments = [];
+        for (const segment of segments) {
+          const routeId = findCommonRouteIdForStops(segment.from, segment.to);
+          if (!routeId) continue;
+
+          const tripSegment = await getRoutePatternSegment(
+            routeId,
+            segment.from?.id,
+            segment.to?.id
+          );
+          if (tripSegment) {
+            tripSegments.push(tripSegment);
+          }
         }
-        setSelectedRouteShape({
-          routeId,
-          coordinates: decodePolyline(shape.attributes.polyline),
-          color: getRouteColor(routeId),
-        });
+        setSelectedRouteShapes(shapes);
+        setSelectedTripSegments(tripSegments);
         onDataUpdated();
       } catch (error) {
         console.error('Error loading selected route shape:', error);
-        setSelectedRouteShape(null);
+        setSelectedRouteShapes([]);
+        setSelectedTripSegments([]);
       }
     };
 
-    if (selectedStops?.origin && selectedStops?.destination) {
-      loadSelectedRouteShape();
-    } else {
-      setSelectedRouteShape(null);
-    }
-  }, [selectedStops?.origin, selectedStops?.destination, routes]);
+    loadSelectedRouteShapes();
+  }, [
+    selectedStops?.origin,
+    selectedStops?.transfer,
+    selectedStops?.destination,
+    routes,
+    routeShapes,
+  ]);
 
   if (loading || !userLocation) {
     return (
@@ -786,6 +1053,7 @@ function InteractiveMap({
       >
         <Pane name="routeLines" style={{ zIndex: 400 }} />
         <Pane name="routeMotion" style={{ zIndex: 620 }} />
+        <Pane name="tripRoute" style={{ zIndex: 710 }} />
         <Pane name="stations" style={{ zIndex: 640 }} />
         <Pane name="selectedStops" style={{ zIndex: 650 }} />
         <Pane name="vehicles" style={{ zIndex: 680 }} />
@@ -936,19 +1204,22 @@ function InteractiveMap({
         })}
 
         {/* Selected route along the tracks */}
-        {selectedRouteShape && selectedRouteShape.coordinates.length > 0 && (
-          <Polyline
-            positions={selectedRouteShape.coordinates}
-            pane="routeMotion"
-            className="route-motion-line"
-            pathOptions={{
-              color: selectedRouteShape.color,
-              weight: 5,
-              opacity: 0.95,
-              dashArray: '6 10',
-            }}
-          />
-        )}
+        {activeLegendVisibility.origin &&
+          activeLegendVisibility.destination &&
+          selectedTripSegments.map((segment, index) => (
+            <Polyline
+              key={`${segment.routeId}-${index}`}
+              positions={segment.coordinates}
+              pane="tripRoute"
+              className="route-motion-line trip-route-line"
+              pathOptions={{
+                color: '#000000',
+                weight: 8,
+                opacity: 0.9,
+                dashArray: '10 10',
+              }}
+            />
+          ))}
         {originPosition && activeLegendVisibility.origin && (
           <CircleMarker
             center={originPosition}
@@ -1111,7 +1382,7 @@ export function LiveMapLegend({
             }))
           }
         />
-        <div className="legend-dot" style={{ background: selectedStopColor }}></div>
+        <div className="legend-dot legend-origin-destination" style={{ background: selectedStopColor }}></div>
         <span>Origin & Destination</span>
       </label>
       <label className="legend-item">
@@ -1123,7 +1394,7 @@ export function LiveMapLegend({
             onLegendVisibilityChange((prev) => ({ ...prev, transfer: event.target.checked }))
           }
         />
-        <div className="legend-dot" style={{ background: '#9E9E9E' }}></div>
+        <div className="legend-dot legend-transfer-dot" style={{ background: '#9E9E9E' }}></div>
         <span>Transfer</span>
       </label>
       <div className="legend-item legend-item-stations">

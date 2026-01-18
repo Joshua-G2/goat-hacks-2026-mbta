@@ -3,6 +3,12 @@
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trip-planner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 .trip-planner h2 {
@@ -40,11 +46,25 @@
   background: white;
   cursor: pointer;
   margin-bottom: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
 }
 
 .route-select:hover,
 .stop-select:hover {
   border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.12);
+}
+
+.route-select:focus-visible,
+.stop-select:focus-visible {
+  outline: none;
+  border-color: #0f5bd6;
+  box-shadow: 0 0 0 3px rgba(15, 91, 214, 0.18);
+}
+
+.route-select:active,
+.stop-select:active {
+  transform: translateY(1px);
 }
 
 .route-select:disabled,
@@ -109,6 +129,12 @@
   background: #f9f9f9;
   border-radius: 6px;
   border: 1px solid #e0e0e0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.predictions-section:hover {
+  border-color: #d0d7e2;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
 }
 
 .predictions-section h3 {
@@ -123,6 +149,12 @@
   background: white;
   border-radius: 6px;
   border-left: 4px solid #0066cc;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.prediction-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
 }
 
 .prediction-item strong {

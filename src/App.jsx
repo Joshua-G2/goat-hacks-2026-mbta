@@ -84,6 +84,40 @@ function App() { //fallback list of stations for the app to use
   const [stations, setStations] = useState([]);
   const [transferStations, setTransferStations] = useState([]);
 
+  const STORAGE_KEYS = {
+    origin: 'mbta_transit_origin',
+    destination: 'mbta_transit_destination',
+    originRouteId: 'mbta_transit_origin_route_id',
+    destinationRouteId: 'mbta_transit_destination_route_id',
+  };
+
+  const normalizeStopForStorage = (stop) => {
+    if (!stop?.id) return null;
+    const name = stop?.attributes?.name || stop?.name || '';
+    const latitude = stop?.attributes?.latitude ?? stop?.latitude ?? null;
+    const longitude = stop?.attributes?.longitude ?? stop?.longitude ?? null;
+    if (!name || typeof latitude !== 'number' || typeof longitude !== 'number') return null;
+    return {
+      id: stop.id,
+      attributes: {
+        name,
+        latitude,
+        longitude,
+      },
+    };
+  };
+
+  const loadStoredStop = (key) => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return normalizeStopForStorage(parsed);
+    } catch (error) {
+      return null;
+    }
+  };
+
   // Load MBTA stations on mount
   useEffect(() => {
     const loadStations = async () => {
@@ -101,6 +135,17 @@ function App() { //fallback list of stations for the app to use
       }
     };
     loadStations();
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.removeItem(STORAGE_KEYS.origin);
+    window.localStorage.removeItem(STORAGE_KEYS.destination);
+    window.localStorage.removeItem(STORAGE_KEYS.originRouteId);
+    window.localStorage.removeItem(STORAGE_KEYS.destinationRouteId);
+    setSelectedOrigin(null);
+    setSelectedDestination(null);
+    setOriginRouteId(null);
+    setDestinationRouteId(null);
   }, []);
 
   // Generate initial tasks when entering game mode
@@ -242,11 +287,39 @@ function App() { //fallback list of stations for the app to use
 
   useEffect(() => {
     setSelectedOriginId(selectedOrigin?.id || null);
+    const storedOrigin = normalizeStopForStorage(selectedOrigin);
+    if (storedOrigin) {
+      window.localStorage.setItem(STORAGE_KEYS.origin, JSON.stringify(storedOrigin));
+    } else {
+      window.localStorage.removeItem(STORAGE_KEYS.origin);
+    }
   }, [selectedOrigin]);
 
   useEffect(() => {
     setSelectedDestinationId(selectedDestination?.id || null);
+    const storedDestination = normalizeStopForStorage(selectedDestination);
+    if (storedDestination) {
+      window.localStorage.setItem(STORAGE_KEYS.destination, JSON.stringify(storedDestination));
+    } else {
+      window.localStorage.removeItem(STORAGE_KEYS.destination);
+    }
   }, [selectedDestination]);
+
+  useEffect(() => {
+    if (originRouteId) {
+      window.localStorage.setItem(STORAGE_KEYS.originRouteId, originRouteId);
+    } else {
+      window.localStorage.removeItem(STORAGE_KEYS.originRouteId);
+    }
+  }, [originRouteId]);
+
+  useEffect(() => {
+    if (destinationRouteId) {
+      window.localStorage.setItem(STORAGE_KEYS.destinationRouteId, destinationRouteId);
+    } else {
+      window.localStorage.removeItem(STORAGE_KEYS.destinationRouteId);
+    }
+  }, [destinationRouteId]);
 
   const handleDataUpdated = () => {
     setLastUpdatedAt(new Date());
@@ -345,6 +418,8 @@ function App() { //fallback list of stations for the app to use
                   selectedOrigin={selectedOrigin}
                   selectedDestination={selectedDestination}
                   selectedTransfer={selectedTransfer}
+                  originRouteId={originRouteId}
+                  destinationRouteId={destinationRouteId}
                   onOriginChange={setSelectedOrigin}
                   onDestinationChange={setSelectedDestination}
                   onTransferChange={setSelectedTransfer}
