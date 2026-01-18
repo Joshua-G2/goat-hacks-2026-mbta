@@ -173,7 +173,7 @@ export const MBTA_API = {
    * @param {string} include - Related resources to include
    * @returns {Promise<Object>} Vehicle data
    */
-  getVehicles: (routeId, include = 'trip,stop') => {
+  getVehicles: (routeId, include = 'trip,stop,route') => {
     return fetchMBTA('/vehicles', {
       'filter[route]': routeId,
       include,

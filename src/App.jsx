@@ -53,6 +53,7 @@ function App() { //fallback list of stations for the app to use
   const [lastUpdatedAt, setLastUpdatedAt] = useState(new Date());
   const [suppressShake, setSuppressShake] = useState(false);
   const suppressShakeTimeoutRef = useRef(null);
+  const [mapDebugEnabled, setMapDebugEnabled] = useState(false);
   const [legendVisibility, setLegendVisibility] = useState({
     user: true,
     origin: true,
@@ -359,9 +360,14 @@ function App() { //fallback list of stations for the app to use
           {/* Right Column: Shared Map */}
           <main className={`app-main ${gameMode ? 'full-screen-game' : ''}`}>
             {gameMode ? (
-              <GameScreen />
+              <>
+                <GameScreen />
+                <EventReportOverlay
+                  userLocation={userPosition}
+                  onReportEvent={handleReportEvent}
+                />
+              </>
             ) : (
-
               <>
                 <div className="map-stack">
                   <InteractiveMap 
@@ -370,6 +376,8 @@ function App() { //fallback list of stations for the app to use
                     legendVisibility={legendVisibility}
                     onLegendVisibilityChange={setLegendVisibility}
                     showLegend={!gameMode}
+                    debugEnabled={mapDebugEnabled}
+                    onDebugEnabledChange={setMapDebugEnabled}
                   />
                 </div>
 
@@ -405,6 +413,15 @@ function App() { //fallback list of stations for the app to use
           {gameMode && (
             <span> | 👥 {otherUsers.length} players online | ⭐ {xp} XP | 🚇 {miles.toFixed(1)} mi</span>
           )}
+          {' '} | {' '}
+          <label className="footer-toggle">
+            <input
+              type="checkbox"
+              checked={mapDebugEnabled}
+              onChange={(event) => setMapDebugEnabled(event.target.checked)}
+            />
+            Show Map Coordinates
+          </label>
         </p>
       </footer>
     </div>
