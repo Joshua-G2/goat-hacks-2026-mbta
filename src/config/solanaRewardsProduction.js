@@ -328,17 +328,21 @@ export async function recordRideAndReward(wallet, rideData) {
 export async function estimateTransactionFee() {
   try {
     return await executeWithFallback(async (connection) => {
-      // Get recent fee for 1 signature transaction
-      const { feeCalculator } = await connection.getRecentBlockhash();
-      const fee = feeCalculator.lamportsPerSignature;
+      // Use getLatestBlockhash instead of deprecated getRecentBlockhash
+      const recentBlockhash = await connection.getLatestBlockhash('confirmed');
+      
+      // Get fee for a simple transaction (1 signature)
+      // On devnet, fees are typically 5000 lamports (0.000005 SOL)
+      const fee = 5000; // Standard transaction fee
       
       return {
         lamports: fee,
-        sol: fee / 1e9,
-        usd: (fee / 1e9) * 100 // Approximate, assuming $100 SOL
+        sol: fee / LAMPORTS_PER_SOL,
+        usd: (fee / LAMPORTS_PER_SOL) * 100 // Approximate, assuming $100 SOL
       };
     });
   } catch (error) {
+    console.warn('⚠️ Could not estimate fee, using fallback:', error.message);
     // Fallback estimate
     return {
       lamports: 5000,
@@ -357,17 +361,23 @@ export async function checkSufficientBalance(walletPublicKey) {
       const balance = await connection.getBalance(walletPublicKey);
       const fee = await estimateTransactionFee();
       
+      console.log(`💼 Balance: ${balance / LAMPORTS_PER_SOL} SOL, Fee: ${fee.sol} SOL`);
+      
       return {
         hasSufficientBalance: balance > fee.lamports,
-        balance: balance / 1e9,
+        balance: balance / LAMPORTS_PER_SOL,
+        balanceLamports: balance,
         feeRequired: fee.sol,
-        remaining: (balance - fee.lamports) / 1e9
+        feeLamports: fee.lamports,
+        remaining: (balance - fee.lamports) / LAMPORTS_PER_SOL
       };
     });
   } catch (error) {
     console.error('Error checking balance:', error);
     return {
       hasSufficientBalance: false,
+      balance: 0,
+      feeRequired: 0.000005,
       error: error.message
     };
   }

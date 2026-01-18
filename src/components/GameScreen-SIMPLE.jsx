@@ -129,6 +129,7 @@ function GameScreen() {
   const [currentTrain, setCurrentTrain] = useState(null);
   const [distanceTraveled, setDistanceTraveled] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
+  const [cumulativePoints, setCumulativePoints] = useState(0); // Track total points across all rides
   const lastPositionRef = useRef(null);
   const [nearbyTrains, setNearbyTrains] = useState([]);
   const [waitingForTrain, setWaitingForTrain] = useState(true);
@@ -633,21 +634,33 @@ function GameScreen() {
         try {
           // Check balance first
           const balanceCheck = await checkSufficientBalance(wallet.publicKey);
+          console.log('💼 Balance check result:', balanceCheck);
+          
           if (!balanceCheck.hasSufficientBalance) {
-            alert(`⚠️ Insufficient SOL for transaction. You need ${balanceCheck.feeRequired} SOL. Get devnet SOL from faucet.`);
+            const feeNeeded = balanceCheck.feeRequired || 0.000005;
+            const currentBalance = balanceCheck.balance || 0;
+            alert(`⚠️ Insufficient SOL for transaction.\n\nYou have: ${currentBalance.toFixed(6)} SOL\nYou need: ${feeNeeded.toFixed(6)} SOL\n\nGet devnet SOL from: https://faucet.solana.com`);
             setPendingTransaction(false);
             return;
           }
+          
+          console.log('✅ Sufficient balance confirmed. Proceeding with transaction...');
+
 
           const currentLeg = journeyPlan[currentLegIndex];
+          const transferPoints = Math.floor(distanceTraveled * 50);
           const rideData = {
             type: 'TRANSFER',
             from: currentLeg?.from?.attributes?.name || 'Unknown',
             to: currentLeg?.to?.attributes?.name || 'Unknown',
             line: currentLeg?.route || 'Unknown',
-            points: Math.floor(distanceTraveled * 50),
+            points: transferPoints,
             timestamp: Date.now()
           };
+          
+          // Add transfer points to cumulative total
+          setCumulativePoints(prev => prev + transferPoints);
+          console.log(`🎯 Transfer points: +${transferPoints}, Total accumulated: ${cumulativePoints + transferPoints}`);
           
           console.log('🔄 Recording transfer on blockchain:', rideData);
           const result = await recordRideAndReward(wallet, rideData);
@@ -682,6 +695,8 @@ function GameScreen() {
       console.log('[GameScreen] Reached final destination');
       const points = Math.floor(distanceTraveled * 100); // 100 points per mile
       setTotalPoints(points);
+      setCumulativePoints(prev => prev + points); // Add to cumulative total
+      console.log(`🎯 Journey complete! Points this ride: +${points}, Total accumulated: ${cumulativePoints + points}`);
       setGameWon(true);
       setWaitingForTransfer(false);
       setTransferStation(null);
@@ -704,10 +719,14 @@ function GameScreen() {
           
           if (!balanceCheck.hasSufficientBalance) {
             console.error('❌ Insufficient SOL for transaction!');
-            alert(`⚠️ Insufficient SOL for transaction. You need ${balanceCheck.feeRequired} SOL. Get devnet SOL from faucet.`);
+            const feeNeeded = balanceCheck.feeRequired || 0.000005;
+            const currentBalance = balanceCheck.balance || 0;
+            alert(`⚠️ Insufficient SOL for transaction.\n\nYou have: ${currentBalance.toFixed(6)} SOL\nYou need: ${feeNeeded.toFixed(6)} SOL\n\nGet devnet SOL from: https://faucet.solana.com`);
             setPendingTransaction(false);
             return;
           }
+          
+          console.log('✅ Sufficient balance confirmed. Proceeding with transaction...');
           
           console.log('✅ Sufficient balance. Proceeding with transaction...');
 
@@ -1082,6 +1101,16 @@ function GameScreen() {
           </div>
         </AnimatedBorderTrail>
         
+        {/* Cumulative Points Display */}
+        {cumulativePoints > 0 && (
+          <AnimatedBorderTrail size="small" trailColor="from-purple-400 to-pink-500">
+            <div className="hud-item" style={{padding: '12px 24px', background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(219, 39, 119, 0.25) 100%)', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(236, 72, 153, 0.3)'}}>
+              <strong className="font-display" style={{color: '#fbbf24', fontSize: '1.1rem'}}>💎 Total Points:</strong> 
+              <span style={{color: 'white', fontSize: '1.2rem', fontWeight: 'bold', marginLeft: '8px'}}>{cumulativePoints}</span>
+            </div>
+          </AnimatedBorderTrail>
+        )}
+        
         {/* Transaction History Panel */}
         {wallet.connected && transactionHistory.length > 0 && (
           <div style={{
@@ -1152,6 +1181,11 @@ function GameScreen() {
               <AnimatedGradientText className="text-5xl block mb-6 font-game">
                 +{totalPoints} Points!
               </AnimatedGradientText>
+              {cumulativePoints > 0 && (
+                <div className="text-3xl mb-4" style={{color: '#fbbf24', fontWeight: 'bold'}}>
+                  💎 Total: {cumulativePoints} Points
+                </div>
+              )}
               <p className="win-xp text-2xl mb-6 text-slate-300 font-display">Distance: {distanceTraveled.toFixed(2)} miles</p>
               
               {/* Blockchain Verification Section */}
