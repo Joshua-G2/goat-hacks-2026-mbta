@@ -404,9 +404,7 @@ function App() { //fallback list of stations for the app to use
       )}
 
       {gameMode && (
-         <div className="game-mode-toggle-float" onClick={handleModeToggle}>
-            ❌ Exit Game
-         </div>
+        null
       )}
 
       <div className="app-container">
@@ -443,7 +441,7 @@ function App() { //fallback list of stations for the app to use
           <main className={`app-main ${gameMode ? 'full-screen-game' : ''}`}>
             {gameMode ? (
               <>
-                <GameScreen />
+                <GameScreen onExitGame={handleModeToggle} />
                 <EventReportOverlay
                   userLocation={userPosition}
                   onReportEvent={handleReportEvent}

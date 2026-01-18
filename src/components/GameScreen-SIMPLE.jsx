@@ -107,7 +107,7 @@ function LocationMarker({ position }) {
   return null;
 }
 
-function GameScreen() {
+function GameScreen({ onExitGame }) {
   console.log('🎮 GameScreen component rendering...');
   
   // Solana wallet integration
@@ -139,6 +139,8 @@ function GameScreen() {
   const [showTrainArrival, setShowTrainArrival] = useState(false);
   const [showWaveGoodbye, setShowWaveGoodbye] = useState(false);
   const [arrivingTrain, setArrivingTrain] = useState(null);
+  const [showWinOverlay, setShowWinOverlay] = useState(false);
+  const trainArrivalCooldownRef = useRef(0);
   const [demoTrain, setDemoTrain] = useState(null);
   const [demoTrainProgress, setDemoTrainProgress] = useState(0);
   const demoTrainIntervalRef = useRef(null);
@@ -338,9 +340,13 @@ function GameScreen() {
       
       // Trigger arrival animation when first train arrives
       if (nearby.length > 0 && nearbyTrains.length === 0) {
-        setArrivingTrain(nearby[0]);
-        setShowTrainArrival(true);
-        setTimeout(() => setShowTrainArrival(false), 5000);
+        const now = Date.now();
+        if (now - trainArrivalCooldownRef.current > 3500) {
+          trainArrivalCooldownRef.current = now;
+          setArrivingTrain(nearby[0]);
+          setShowTrainArrival(true);
+          setTimeout(() => setShowTrainArrival(false), 3000);
+        }
       }
     };
     
@@ -591,7 +597,7 @@ function GameScreen() {
           }
         }, 100); // Update every 100ms for smooth animation (10 seconds total)
       }
-    }, 2000);
+    }, 3000);
   };
 
   const handleOffboard = async () => {
@@ -821,9 +827,12 @@ function GameScreen() {
       setDemoTrain(train);
       setNearbyTrains([train]);
       setArrivingTrain(train);
-      setShowTrainArrival(true);
-      
-      setTimeout(() => setShowTrainArrival(false), 2000);
+      const now = Date.now();
+      if (now - trainArrivalCooldownRef.current > 3500) {
+        trainArrivalCooldownRef.current = now;
+        setShowTrainArrival(true);
+        setTimeout(() => setShowTrainArrival(false), 3000);
+      }
     }, 2000);
   }, [gameStarted, startStation, destination, demoTrain]);
 
@@ -855,6 +864,17 @@ function GameScreen() {
     setSelectedStation(null);
     setStationPredictions([]);
   };
+
+  useEffect(() => {
+    if (!gameWon) {
+      setShowWinOverlay(false);
+      return;
+    }
+
+    setShowWinOverlay(true);
+    const timer = setTimeout(() => setShowWinOverlay(false), 3000);
+    return () => clearTimeout(timer);
+  }, [gameWon]);
 
   const handleStationClick = async (stop) => {
     setSelectedStation(stop);
@@ -921,7 +941,7 @@ function GameScreen() {
       {/* Ticket Upload Modal - Stylish Popup */}
       {!ticketVerified && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background: 'rgba(102, 126, 234, 0.4)', backdropFilter: 'blur(10px)'}}>
-          <div style={{background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(30px)', borderRadius: '24px', padding: '40px', maxWidth: '500px', width: '90%', boxShadow: '0 30px 90px rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.5)'}}>
+          <div style={{background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(30px)', borderRadius: '20px', padding: '32px', maxWidth: '420px', width: '88%', minHeight: '520px', boxShadow: '0 24px 70px rgba(0, 0, 0, 0.28)', border: '1px solid rgba(255, 255, 255, 0.5)'}}>
             <TicketUpload onVerified={() => setTicketVerified(true)} />
           </div>
         </div>
@@ -1088,34 +1108,41 @@ function GameScreen() {
       )}
 
       {/* Top HUD - Elegant Glass Morphism */}
-      <div className="hud-top font-sans" style={{display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '16px'}}>
-        {/* Wallet Connect - Top Left */}
-        <div style={{position: 'fixed', top: '15px', left: '15px', zIndex: 1000}}>
-          <WalletConnect />
-        </div>
-        
-        <AnimatedBorderTrail size="small" trailColor="from-accent-400 to-primary-500">
-          <div className="hud-item" style={{padding: '12px 24px', background: 'rgba(255, 255, 255, 0.15)', borderRadius: '12px', backdropFilter: 'blur(10px)'}}>
-            <strong className="font-display" style={{color: 'rgba(255, 255, 255, 0.95)'}}>Distance:</strong> 
-            <span style={{color: 'white'}}>{distanceTraveled.toFixed(2)} mi</span>
-          </div>
-        </AnimatedBorderTrail>
-        
-        {/* Cumulative Points Display */}
-        {cumulativePoints > 0 && (
-          <AnimatedBorderTrail size="small" trailColor="from-purple-400 to-pink-500">
-            <div className="hud-item" style={{padding: '12px 24px', background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(219, 39, 119, 0.25) 100%)', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(236, 72, 153, 0.3)'}}>
-              <strong className="font-display" style={{color: '#fbbf24', fontSize: '1.1rem'}}>💎 Total Points:</strong> 
-              <span style={{color: 'white', fontSize: '1.2rem', fontWeight: 'bold', marginLeft: '8px'}}>{cumulativePoints}</span>
+      <div className="hud-top font-sans" style={{display: 'flex', gap: '12px', alignItems: 'center', padding: '16px'}}>
+        <div style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
+          <AnimatedBorderTrail size="small" trailColor="from-accent-400 to-primary-500">
+            <div className="hud-item" style={{padding: '12px 24px', background: 'rgba(255, 255, 255, 0.15)', borderRadius: '12px', backdropFilter: 'blur(10px)'}}>
+              <strong className="font-display" style={{color: 'rgba(255, 255, 255, 0.95)'}}>Distance:</strong> 
+              <span style={{color: 'white'}}>{distanceTraveled.toFixed(2)} mi</span>
             </div>
           </AnimatedBorderTrail>
-        )}
-        
+
+          <div className="hud-wallet">
+            <WalletConnect />
+          </div>
+
+          {/* Cumulative Points Display */}
+          {cumulativePoints > 0 && (
+            <AnimatedBorderTrail size="small" trailColor="from-purple-400 to-pink-500">
+              <div className="hud-item" style={{padding: '12px 24px', background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(219, 39, 119, 0.25) 100%)', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(236, 72, 153, 0.3)'}}>
+                <strong className="font-display" style={{color: '#fbbf24', fontSize: '1.1rem'}}>💎 Total Points:</strong> 
+                <span style={{color: 'white', fontSize: '1.2rem', fontWeight: 'bold', marginLeft: '8px'}}>{cumulativePoints}</span>
+              </div>
+            </AnimatedBorderTrail>
+          )}
+        </div>
+
+        <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center'}}>
+          <button className="btn-secondary font-sans" onClick={onExitGame} style={{padding: '12px 24px', fontSize: '0.95rem'}}>
+            Exit Game
+          </button>
+        </div>
+
         {/* Transaction History Panel */}
         {wallet.connected && transactionHistory.length > 0 && (
           <div style={{
             position: 'fixed',
-            top: '15px',
+            top: '80px',
             right: '15px',
             zIndex: 998,
             maxWidth: '350px'
@@ -1164,7 +1191,7 @@ function GameScreen() {
       </div>
 
       {/* Win Screen - Elegant Gaming Celebration */}
-      {gameWon && (
+      {gameWon && showWinOverlay && (
         <div className="win-overlay">
           <AnimatedBorderTrail size="large">
             <div className="win-box" style={{background: 'rgba(15, 23, 42, 0.98)', padding: '50px', textAlign: 'center', borderRadius: '20px', maxWidth: '600px'}}>
@@ -1216,7 +1243,7 @@ function GameScreen() {
               
               <AnimatedBorderTrail size="medium">
                 <button className="btn-primary font-game" onClick={handleRestart} style={{padding: '15px 50px', fontSize: '1.3rem'}}>
-                  <AnimatedGradientText>🎮 Play Again</AnimatedGradientText>
+                  <AnimatedGradientText>🎮 PLAY AGAIN</AnimatedGradientText>
                 </button>
               </AnimatedBorderTrail>
             </div>
@@ -1233,7 +1260,8 @@ function GameScreen() {
           zoomControl={true}
         >
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           />
           
           <LocationMarker position={normalizedPosition} />
@@ -1372,7 +1400,7 @@ function GameScreen() {
       {/* Bottom Controls - Simple and Clear */}
       <div className="controls-bottom">
         {!gameStarted && (
-          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px'}}>
+          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px', paddingTop: '28px', paddingBottom: '36px'}}>
             <AnimatedBorderTrail size="medium">
               <button className="btn-primary font-display" onClick={handleStartGame} style={{padding: '16px 48px', fontSize: '1.1rem', fontWeight: 700}}>
                 <AnimatedGradientText className="text-xl">🎮 START GAME</AnimatedGradientText>
@@ -1382,8 +1410,8 @@ function GameScreen() {
         )}
 
         {gameStarted && !startStation && (
-          <div className="destination-picker" style={{padding: '28px', maxWidth: '600px', margin: '0 auto'}}>
-            <h3 className="font-display" style={{fontSize: '1.75rem', marginBottom: '24px', textAlign: 'center', fontWeight: 700, color: '#1e293b'}}>
+          <div className="destination-picker" style={{padding: '20px', maxWidth: '460px', margin: '0 auto'}}>
+            <h3 className="font-display" style={{fontSize: '1.35rem', marginBottom: '16px', textAlign: 'center', fontWeight: 700, color: '#1e293b'}}>
               Select Your Starting Station
             </h3>
             <AnimatedBorderTrail size="medium" trailColor="from-primary-400 to-accent-500">
@@ -1393,20 +1421,20 @@ function GameScreen() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input-simple font-sans"
-                style={{padding: '16px 20px', fontSize: '1.1rem', fontWeight: 500}}
+                style={{padding: '12px 16px', fontSize: '0.95rem', fontWeight: 500}}
                 autoFocus
               />
             </AnimatedBorderTrail>
-            <div className="search-results" style={{marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px'}}>
+            <div className="search-results" style={{marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px'}}>
               {searchResults.map(stop => (
                 <AnimatedBorderTrail key={stop.id} size="small" trailColor="from-accent-400 to-primary-400">
                   <div
                     className="search-result-item font-sans"
                     onClick={() => handleSelectStartStation(stop)}
-                    style={{padding: '14px 20px', cursor: 'pointer', fontWeight: 500}}
+                    style={{padding: '10px 16px', cursor: 'pointer', fontWeight: 500}}
                   >
-                    <span className="stop-icon" style={{marginRight: '12px', fontSize: '1.4rem'}}>🚩</span>
-                    <span className="stop-name" style={{fontSize: '1.05rem'}}>{stop.attributes.name}</span>
+                    <span className="stop-icon" style={{marginRight: '10px', fontSize: '1.2rem'}}>🚩</span>
+                    <span className="stop-name" style={{fontSize: '0.95rem'}}>{stop.attributes.name}</span>
                   </div>
                 </AnimatedBorderTrail>
               ))}
@@ -1448,7 +1476,7 @@ function GameScreen() {
         )}
 
         {gameStarted && startStation && destination && !gameWon && !isOnTrain && (
-          <div className="game-info font-display" style={{padding: '20px', maxWidth: '700px', margin: '0 auto'}}>
+          <div className="game-info font-display scroll-panel" style={{padding: '20px', maxWidth: '700px', margin: '0 auto'}}>
             <AnimatedBorderTrail size="small" trailColor="from-pink-400 to-purple-500">
               <div style={{padding: '15px', background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)', backdropFilter: 'blur(20px)', borderRadius: '10px', marginBottom: '15px', border: '1px solid rgba(236, 72, 153, 0.2)'}}>
                 <p style={{marginBottom: '8px'}}><strong className="font-game">Start:</strong> {startStation.attributes.name}</p>
@@ -1494,8 +1522,8 @@ function GameScreen() {
                   <div key={pred.id} style={{
                     padding: '8px',
                     margin: '5px 0',
-                    background: 'rgba(0,0,0,0.3)',
-                    borderRadius: '4px',
+                    background: 'rgba(219, 234, 254, 0.95)',
+                    borderRadius: '6px',
                     borderLeft: `4px solid ${ROUTE_COLORS[pred.routeId] || '#666'}`
                   }}>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -1509,9 +1537,11 @@ function GameScreen() {
                     </div>
                   </div>
                 ))}
-                <p style={{fontSize: '0.9em', marginTop: '10px', opacity: 0.9}}>
-                  💡 Wait for train to arrive at station, then click BOARD
-                </p>
+                <div style={{marginTop: '12px', background: 'rgba(251, 191, 36, 0.2)', padding: '10px 12px', borderRadius: '8px'}}>
+                  <p style={{fontSize: '0.9em', margin: 0, opacity: 0.95}}>
+                    💡 Wait for a train to arrive at your station, then click BOARD
+                  </p>
+                </div>
               </div>
             )}
             
@@ -1525,10 +1555,10 @@ function GameScreen() {
             {/* Show trains at station with BOARD button */}
             {nearbyTrains.length > 0 && (
               <div style={{marginTop: '15px'}}>
-                <h4 style={{margin: '5px 0 15px 0', color: '#10b981', fontSize: '1.2em'}}>🚆 TRAINS AT STATION - BOARD NOW!</h4>
+                <h4 style={{margin: '5px 0 15px 0', color: '#10b981', fontSize: '1.2em'}}>🚆 Train is at station - Board now!</h4>
                 {nearbyTrains.map(train => (
                   <div key={train.id} style={{
-                    background: ROUTE_COLORS[train.routeId] || '#666',
+                    background: 'rgba(219, 234, 254, 0.92)',
                     padding: '15px',
                     margin: '10px 0',
                     borderRadius: '12px',
@@ -1536,7 +1566,8 @@ function GameScreen() {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                    animation: 'pulse 2s infinite'
+                    animation: 'train-card-pulse 2s ease-in-out infinite',
+                    borderLeft: `6px solid ${ROUTE_COLORS[train.routeId] || '#666'}`
                   }}>
                     <div>
                       <strong style={{fontSize: '1.2em'}}>{train.routeId} Line 🚆</strong>
@@ -1554,7 +1585,7 @@ function GameScreen() {
                         style={{
                           padding: '15px 30px',
                           fontSize: '1.2em',
-                          background: '#10b981',
+                          background: '#0b2d6b',
                           border: 'none',
                           borderRadius: '10px',
                           cursor: 'pointer',
@@ -1574,6 +1605,19 @@ function GameScreen() {
             <button className="btn-secondary" onClick={handleRestart} style={{marginTop: '15px'}}>
               Restart
             </button>
+          </div>
+        )}
+
+        {gameWon && !showWinOverlay && (
+          <div className="game-info font-display" style={{padding: '20px', maxWidth: '520px', margin: '0 auto'}}>
+            <p style={{marginBottom: '12px', fontSize: '1.1rem', color: '#0f172a', fontWeight: 700}}>
+              Destination reached.
+            </p>
+            <AnimatedBorderTrail size="medium">
+              <button className="btn-primary font-game" onClick={handleRestart} style={{padding: '14px 40px', fontSize: '1.1rem'}}>
+                <AnimatedGradientText>🎮 PLAY AGAIN</AnimatedGradientText>
+              </button>
+            </AnimatedBorderTrail>
           </div>
         )}
 
@@ -1601,7 +1645,7 @@ function GameScreen() {
                 <button 
                   className="btn-primary btn-large font-game" 
                   onClick={handleOffboard}
-                  style={{marginTop: '15px', padding: '18px 40px', background: currentLegIndex < journeyPlan.length - 1 ? '#ec4899' : '#10b981', animation: 'pulse 2s infinite', fontSize: '1.3rem'}}
+                  style={{marginTop: '15px', padding: '18px 40px', background: '#0b2d6b', animation: 'pulse 2s infinite', fontSize: '1.3rem'}}
                 >
                   <AnimatedGradientText>
                     {currentLegIndex < journeyPlan.length - 1 ? '🔄 TRANSFER HERE' : '🚺 OFF-BOARD (Arrived!)'}
@@ -1612,7 +1656,7 @@ function GameScreen() {
             
             {!canOffboard && (
               <p className="font-display" style={{color: '#fbbf24', marginTop: '15px', textAlign: 'center', fontSize: '1.05rem'}}>
-                🚆 Stay on train until you reach {journeyPlan[currentLegIndex]?.to?.attributes?.name || destination.attributes.name}
+                🚆 Stay on your train until you reach {journeyPlan[currentLegIndex]?.to?.attributes?.name || destination.attributes.name}
               </p>
             )}
           </div>

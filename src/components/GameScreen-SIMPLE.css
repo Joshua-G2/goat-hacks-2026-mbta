@@ -5,7 +5,7 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0b2d6b 0%, #0f1d3f 100%);
 }
 
 /* === TOP HUD === */
@@ -18,11 +18,12 @@
   display: flex;
   gap: 10px;
   justify-content: space-between;
-  background: transparent;
+  background: rgba(15, 23, 42, 0.6);
   padding: 12px 16px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-size: 14px;
-  color: white;
+  color: #f8fafc;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .hud-item {
@@ -33,13 +34,36 @@
   font-weight: 500;
 }
 
+.hud-wallet .wallet-help-info {
+  display: none;
+}
+
+.hud-wallet .wallet-connect-container {
+  align-items: center;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:hover {
+  background: rgba(236, 72, 153, 0.12) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.25);
+}
+
 .xp-display {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0f172a;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  color: #f8fafc;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
 /* === MAP === */
@@ -67,26 +91,32 @@
 
 /* === BUTTONS === */
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0b2d6b;
   color: white;
   border: none;
   padding: 14px 28px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+  transition: all 0.2s ease;
   letter-spacing: -0.02em;
 }
 
 .btn-primary:hover {
   transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.4);
+  background: #10357b;
 }
 
 .btn-primary:active {
   transform: translateY(-1px);
+}
+
+.btn-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
 }
 
 .btn-large {
@@ -96,26 +126,45 @@
 }
 
 .btn-secondary {
-  background: #64748b;
+  background: #1f2937;
   color: white;
   border: none;
   padding: 10px 16px;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   margin-top: 10px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #334155;
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.35);
 }
 
 /* === DESTINATION PICKER === */
 .destination-picker {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 24px;
-  padding: 28px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.destination-picker:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.16);
 }
 
 .destination-picker h3 {
@@ -127,17 +176,17 @@
 .search-input-simple {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #cbd5e1;
-  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
   font-size: 16px;
   margin-bottom: 12px;
   outline: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
 }
 
 .search-input-simple:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .search-results {
@@ -153,17 +202,18 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .search-result-item:hover {
-  background: #e0f2fe;
+  background: #f0f7ff;
   border-color: #2563eb;
-  transform: translateX(4px);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.12);
 }
 
 .stop-icon {
@@ -178,14 +228,42 @@
 
 /* === GAME INFO === */
 .game-info {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
   text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.scroll-panel {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.scroll-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-panel::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+}
+
+.scroll-panel::-webkit-scrollbar-thumb {
+  background: rgba(37, 99, 235, 0.45);
+  border-radius: 10px;
+}
+
+.scroll-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(37, 99, 235, 0.6);
+}
+
+.game-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.16);
 }
 
 .game-info p {
@@ -211,9 +289,10 @@
 .win-box {
   background: white;
   padding: 40px;
-  border-radius: 16px;
+  border-radius: 12px;
   text-align: center;
   max-width: 400px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
 
 .win-box h1 {
@@ -303,5 +382,14 @@
   50% {
     transform: scale(1.05);
     opacity: 0.9;
+  }
+}
+
+@keyframes train-card-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  50% {
+    box-shadow: 0 8px 18px rgba(0,0,0,0.4);
   }
 }

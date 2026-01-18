@@ -102,7 +102,7 @@ export default function TicketUpload({ onVerified }) {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         className={cn(
-          "relative w-full max-w-md h-64 border-2 border-dashed rounded-2xl transition-all duration-300",
+          "relative w-full max-w-sm h-44 border-2 border-dashed rounded-2xl transition-all duration-300",
           verified 
             ? "border-green-500 bg-green-500/10" 
             : "border-slate-600 bg-slate-800/50 hover:border-purple-500 hover:bg-slate-800/70"
