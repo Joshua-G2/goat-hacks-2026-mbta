@@ -380,7 +380,7 @@ function InteractiveMap({
   };
 
   const createDualStopIcon = (colorA, colorB, isSelected) => {
-    const size = isSelected ? 16 : 10;
+    const size = isSelected ? 18 : 12;
     return L.divIcon({
       className: 'dual-stop-marker',
       html: `<div class="dual-stop-marker-inner" style="--color-a: ${colorA}; --color-b: ${colorB}; width: ${size}px; height: ${size}px;"></div>`,
