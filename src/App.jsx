@@ -7,6 +7,7 @@ import TripPlanner from './components/TripPlanner'
 import UserProfile from './components/UserProfile'
 import QuestDialog from './components/QuestDialog'
 import EventReportOverlay from './components/EventReportOverlay'
+import GameScreen from './components/GameScreen-SIMPLE';
 import { generateQuest } from './services/questService'
 import MBTA_API from './config/mbtaApi'
 import { generateRandomTask, metersToMiles, checkMilestonReward, XP_REWARDS, createEventReport } from './utils/gameHelpers'
@@ -253,6 +254,7 @@ function App() { //fallback list of stations for the app to use
       clearTimeout(suppressShakeTimeoutRef.current);
     }
     setGameMode(prev => !prev);
+    setShowDecisionEngine(false); // Hide decision engine when switching modes
     suppressShakeTimeoutRef.current = setTimeout(() => {
       setSuppressShake(false);
     }, 400);
@@ -309,42 +311,33 @@ function App() { //fallback list of stations for the app to use
   };
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>🚇 MBTA Transit {gameMode ? 'RPG' : 'Helper'}</h1>
-        <p className="app-description">
-          {gameMode 
-            ? 'Embark on a transit adventure across Boston' 
-            : 'Plan your journey with live predictions and transfer guidance'}
-        </p>
-        <button 
-          className={`mode-toggle-button${suppressShake ? ' no-shake' : ''}`}
-          onClick={handleModeToggle}
-        >
-          {gameMode ? '🗺️ Back to Transit Mode' : '🎮 Game Mode'}
-        </button>
-      </header>
+    <div className={`app ${gameMode ? 'game-mode-active' : ''}`}>
+      {!gameMode && (
+        <header className="app-header">
+          <h1>🚇 MBTA Transit Helper</h1>
+          <p className="app-description">
+            Plan your journey with live predictions and transfer guidance
+          </p>
+          <button 
+            className="mode-toggle-button"
+            onClick={handleModeToggle}
+          >
+            🎮 Enter Game Mode
+          </button>
+        </header>
+      )}
+
+      {gameMode && (
+         <div className="game-mode-toggle-float" onClick={handleModeToggle}>
+            ❌ Exit Game
+         </div>
+      )}
 
       <div className="app-container">
-        <>
-          {/* Left Column */}
-          <aside className={`app-sidebar${gameMode ? ' game-sidebar' : ''}`}>
-            {gameMode ? (
-              <UserProfile 
-                xp={xp}
-                miles={miles}
-                tasksCompleted={tasksCompleted}
-                mapLegend={(
-                  <LiveMapLegend
-                    className="embedded"
-                    legendVisibility={legendVisibility}
-                    onLegendVisibilityChange={setLegendVisibility}
-                  />
-                )}
-              />
-            ) : (
-              <>
-                <TripPlanner
+        {/* Left Column - Hidden in Game Mode */}
+        {!gameMode && (
+        <aside className="app-sidebar">
+             <TripPlanner
                   fallbackStations={IMPORTANT_STATIONS}
                   selectedOrigin={selectedOrigin}
                   selectedDestination={selectedDestination}
@@ -360,41 +353,38 @@ function App() { //fallback list of stations for the app to use
                   transferStation={selectedStops.transfer}
                   walkingSpeed="normal"
                 />
-              </>
-            )}
           </aside>
+        )}
 
           {/* Right Column: Shared Map */}
-          <main className="app-main">
-            <div className="map-stack">
-              <InteractiveMap 
-                selectedStops={selectedStops}
-                onDataUpdated={handleDataUpdated}
-                legendVisibility={legendVisibility}
-                onLegendVisibilityChange={setLegendVisibility}
-                showLegend={!gameMode}
-              />
-              {gameMode && (
-                <EventReportOverlay
-                  userLocation={userPosition}
-                  onReportEvent={handleReportEvent}
-                />
-              )}
-            </div>
+          <main className={`app-main ${gameMode ? 'full-screen-game' : ''}`}>
+            {gameMode ? (
+              <GameScreen />
+            ) : (
 
-            {!gameMode && (
-              <LiveConnectionFinder
-                selectedOrigin={selectedOrigin}
-                selectedTransfer={selectedTransfer}
-                selectedDestination={selectedDestination}
-                selectedOriginId={selectedOriginId}
-                selectedDestinationId={selectedDestinationId}
-                lastUpdatedAt={lastUpdatedAt}
-                onDataUpdated={handleDataUpdated}
-              />
+              <>
+                <div className="map-stack">
+                  <InteractiveMap 
+                    selectedStops={selectedStops}
+                    onDataUpdated={handleDataUpdated}
+                    legendVisibility={legendVisibility}
+                    onLegendVisibilityChange={setLegendVisibility}
+                    showLegend={!gameMode}
+                  />
+                </div>
+
+                <LiveConnectionFinder
+                  selectedOrigin={selectedOrigin}
+                  selectedTransfer={selectedTransfer}
+                  selectedDestination={selectedDestination}
+                  selectedOriginId={selectedOriginId}
+                  selectedDestinationId={selectedDestinationId}
+                  lastUpdatedAt={lastUpdatedAt}
+                  onDataUpdated={handleDataUpdated}
+                />
+              </>
             )}
           </main>
-        </>
       </div>
 
       {/* Quest Dialog */}
