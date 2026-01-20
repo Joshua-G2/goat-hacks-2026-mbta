@@ -1,25 +1,24 @@
-# MBTA Transit Helper + RPG Mode
+# MBTA Transit Helper + RPG Game Mode with Solana Blockchain
 
 A React web app that combines real-time MBTA trip planning with an optional RPG-style game layer. Use Transit Mode for route planning and live predictions, or switch to Game Mode for XP, quests, achievements, and event reporting.
 
-## Modes
+**Key Features:**
+- **Transit Mode** – Plan multi-leg MBTA trips in real time with:
+  - Intelligent transfer routing: Origin → Transfer → Destination
+  - Live arrival predictions and auto-refreshing data (every 30 seconds)
+  - Walking time estimation and transfer confidence scoring based on timing and distance
+  - Interactive map with MBTA line colors, routes, and station markers
+  - Easy, validated station selection with dropdowns grouped by subway line
 
-### Transit Mode
-- Trip planning with origin, transfer, and destination selection
-- Live predictions and transfer confidence
-- Interactive map with routes, stops, and selection overlays
-- Transfer guidance with walking time and accessibility notes
-- Live connection finder with countdowns
+- **Game Mode** – Overlay an RPG system on top of everyday trips:
+  - Unlock by uploading a ticket; earns points and tracks journeys
+  - Progression via XP, levels, and achievements for distance and tasks
+  - AI-generated “quests,” gamified event reporting, and a collection of badges
 
-### Game Mode
-- XP and level system with titles and progress
-- Tasks and quests generated around MBTA stations
-- Achievements and milestone rewards
-- Social event reporting and activity feed
-
-## Quick Start
-
-See `QUICKSTART.md` for a short setup guide.
+- **Blockchain Integration**:
+  - Each journey and achievement is recorded on-chain (Solana, via Memo)
+  - Micro-rewards (SOL) are distributed for validated journeys
+  - Phantom or Solflare wallet connection for transparent, real-time rewards
 
 ### Prerequisites
 - Node.js 18+
@@ -33,12 +32,6 @@ cp .env.example .env
 npm run dev
 ```
 Open http://localhost:5173
-
-## Documentation
-- `QUICKSTART.md` - setup steps
-- `API_SETUP.md` - MBTA API configuration
-- `RPG_FEATURES.md` - RPG mode details
-- `IMPLEMENTATION_SUMMARY.md` - implementation notes
 
 ## Project Structure
 ```
